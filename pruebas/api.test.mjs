@@ -1,11 +1,12 @@
-import{test}from'node:test';import assert from'node:assert/strict';import{mkdtempSync}from'node:fs';import{resolve}from'node:path';import{crearAplicacion}from'../servidor-dist/main.mjs';
+import{test}from'node:test';import assert from'node:assert/strict';import{mkdtempSync}from'node:fs';import{resolve}from'node:path';import{crearAplicacion}from'../servidor-dist/main.mjs';import{semillaDemo}from'../servidor-dist/semillaDemo.mjs';
 async function entorno(ruta=':memory:'){
- const app=await crearAplicacion(ruta);await new Promise(r=>app.servidor.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${app.servidor.address().port}`;
+ const app=await crearAplicacion(ruta,semillaDemo);await new Promise(r=>app.servidor.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${app.servidor.address().port}`;
  const sesion=()=>{let cookie='';return async(ruta,pedido)=>{const r=await fetch(`${url}/api/${ruta}`,{method:pedido===undefined?'GET':'POST',headers:{...(pedido===undefined?{}:{'Content-Type':'application/json'}),Cookie:cookie},body:pedido===undefined?undefined:JSON.stringify(pedido)});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];return{codigo:r.status,datos:await r.json()};};};return{...app,sesion};
 }
 const entrar=(api,rol='Comercio',correo='comercio@sutaller.pe',clave='credi2026')=>api('login',{rol,correo,clave});
 const op=(api,accion,pedido)=>api('operacion',{accion,pedido});
 const cliente=(base,doc,nombre='Cliente de prueba')=>({...base,id:-1,tipoDoc:'DNI',doc,nombre,correo:'',limite:'10000',tipoC:'Nominal',valC:'24',valM:'15',horaCorte:'18:00'});
+async function consultar(ruta,sql,params=[]){const {PGlite}=await import('@electric-sql/pglite');const db=new PGlite(resolve(ruta));try{return (await db.query(sql,params)).rows;}finally{await db.close();}}
 test('API exige sesión, no expone contraseñas y aplica permisos en el servidor',async()=>{
  const app=await entorno();try{const api=app.sesion();assert.equal((await api('estado')).codigo,401);assert.equal((await entrar(api,'Comercio','comercio@sutaller.pe','incorrecta')).codigo,400);
  const comercio=await entrar(api);assert.equal(comercio.codigo,200);assert.deepEqual(comercio.datos.datos.cuentas,[]);assert.ok(!JSON.stringify(comercio.datos).includes('"hash"'));
@@ -47,7 +48,7 @@ test('cronograma francés del segundo caso y cobranza completa por API',async()=
  }finally{await app.cerrar();}
 });
 test('el servicio genera el corte sin navegador ni sesión y evita duplicados',async()=>{
- let reloj='2026-09-19T12:00';const app=await crearAplicacion(':memory:',()=>reloj);
+ let reloj='2026-09-19T12:00';const app=await crearAplicacion(':memory:',semillaDemo,()=>reloj);
  try{reloj='2026-09-20T23:59';assert.ok(await app.revisarCortes()>0);assert.equal(await app.revisarCortes(),0);}
  finally{await app.cerrar();}
 });
@@ -92,8 +93,7 @@ test('la sesión sigue vigente después de reiniciar el servidor y el token no q
   const e=await fetch(`http://127.0.0.1:${app.servidor.address().port}/api/estado`,{headers:{Cookie:cookie}});
   assert.equal(e.status,200,'la cookie sigue siendo válida tras el reinicio');
   await app.cerrar();
-  const {DatabaseSync}=await import('node:sqlite');const db=new DatabaseSync(ruta,{readOnly:true});
-  try{const filas=db.prepare('SELECT token_hash FROM sesiones').all();assert.ok(filas.length>=1);assert.ok(filas.every(f=>f.token_hash!==cookie.split('=')[1]),'el token no se guarda en claro');}finally{db.close();}
+  const filas=await consultar(ruta,'SELECT token_hash FROM sesiones');assert.ok(filas.length>=1);assert.ok(filas.every(f=>f.token_hash!==cookie.split('=')[1]),'el token no se guarda en claro');
   app=await entorno(ruta);
  }finally{await app.cerrar();}
 });
@@ -139,7 +139,6 @@ test('entradas mal formadas se rechazan con 400/415, sin filtrar errores interno
 });
 
 test('cambio de contraseña: exige la actual, valida la nueva, cierra otras sesiones y se audita sin contraseñas',async()=>{
- const {DatabaseSync}=await import('node:sqlite');
  const carpeta=mkdtempSync(resolve('pruebas','base-prueba-')),ruta=resolve(carpeta,'clave.sqlite');
  const app=await entorno(ruta);
  try{
@@ -159,23 +158,23 @@ test('cambio de contraseña: exige la actual, valida la nueva, cierra otras sesi
   assert.equal((await otra('clave',{actual:'credi2026'})).codigo,400);
   assert.equal((await app.sesion()('clave',{actual:'credi2026',nueva:'OtraClave2026'})).codigo,401);
   await app.cerrar();
-  const lectura=new DatabaseSync(ruta,{readOnly:true});const filas=lectura.prepare('SELECT accion,actor,detalle FROM auditoria').all();lectura.close();
+  const filas=await consultar(ruta,'SELECT accion,actor,detalle FROM auditoria');
   const cambio=filas.filter(f=>f.accion==='CAMBIAR CLAVE');
   assert.equal(cambio.length,1);assert.equal(cambio[0].actor,'comercio@sutaller.pe');assert.match(cambio[0].detalle,/^cuenta=\d+$/);
   assert.ok(!/NuevaClave2026|credi2026/.test(JSON.stringify(filas)));
  }finally{await app.cerrar().catch(()=>undefined);}
 });
 test('las cuentas con hash anterior se renuevan al ingresar y siguen funcionando tras reiniciar',async()=>{
- const {DatabaseSync}=await import('node:sqlite');const {pbkdf2Sync}=await import('node:crypto');
+ const {pbkdf2Sync}=await import('node:crypto');
  const carpeta=mkdtempSync(resolve('pruebas','base-prueba-')),ruta=resolve(carpeta,'anterior.sqlite');
  let app=await entorno(ruta);await app.cerrar();
- const db=new DatabaseSync(ruta);const {sal}=db.prepare("SELECT sal FROM cuentas WHERE correo='comercio@sutaller.pe'").get();
- db.prepare("UPDATE cuentas SET hash=? WHERE correo='comercio@sutaller.pe'").run(pbkdf2Sync('credi2026',sal,100000,32,'sha256').toString('hex'));db.close();
+ const {PGlite}=await import('@electric-sql/pglite');const db=new PGlite(resolve(ruta));const {sal}=(await db.query("SELECT sal FROM cuentas WHERE correo='comercio@sutaller.pe'")).rows[0];
+ await db.query("UPDATE cuentas SET hash=$1 WHERE correo='comercio@sutaller.pe'",[pbkdf2Sync('credi2026',sal,100000,32,'sha256').toString('hex')]);await db.close();
  app=await entorno(ruta);
  try{
   assert.equal((await entrar(app.sesion())).codigo,200);
  }finally{await app.cerrar();}
- const lectura=new DatabaseSync(ruta,{readOnly:true});const f=lectura.prepare("SELECT sal,hash FROM cuentas WHERE correo='comercio@sutaller.pe'").get();lectura.close();
+ const [f]=await consultar(ruta,"SELECT sal,hash FROM cuentas WHERE correo='comercio@sutaller.pe'");
  assert.match(f.hash,/^pbkdf2-sha256\$600000\$[0-9a-f]{64}$/);assert.notEqual(f.sal,sal);
  app=await entorno(ruta);
  try{assert.equal((await entrar(app.sesion())).codigo,200);}finally{await app.cerrar();}

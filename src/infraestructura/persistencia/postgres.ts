@@ -1,46 +1,60 @@
 /**
- * Adaptador PostgreSQL (Neon en producción, PGlite en pruebas).
- * - guardar: transacción con bloqueo de la fila de versión; compara con el estado vigente de la base
- *   y escribe solo las filas que cambiaron (misma regla que SQLite, en esquema.ts).
- * - leer: transacción de solo lectura con instantánea coherente de todas las tablas.
- * - Las operaciones de sesiones son sentencias individuales.
- * La interfaz es asíncrona. El puerto síncrono de SQLite se reemplaza en la Fase 3.
+ * Adaptador PostgreSQL (Neon en producción; PGlite en desarrollo y pruebas).
+ * Cada solicitud es una transacción: bloquea la fila de versión, carga la fotografía de datos y las sesiones
+ * vigentes, ejecuta la lógica síncrona de la aplicación sobre esa fotografía y confirma solo las filas que cambiaron.
+ * Si la lógica lanza un error, la transacción se revierte completa.
  */
 import type { Datos } from '../../shared/dominio/datos';
-import { TABLAS, sentenciasDeEsquema, sqlLectura, estadoDesde, armarDatos, planificar, type Crudos, type ResumenGuardado } from './esquema';
+import type { AlmacenSesiones, UnidadDeSolicitud } from '../../shared/aplicacion/puertos';
+import { TABLAS, sentenciasDeEsquema, sqlLectura, estadoDesde, armarDatos, planificar, type Crudos, type Operacion } from './esquema';
 
 export interface ClienteSql { query(sql: string, params?: unknown[]): Promise<{ rows: any[] }>; release(): void }
-export interface PoolSql { connect(): Promise<ClienteSql>; query(sql: string, params?: unknown[]): Promise<{ rows: any[] }>; end(): Promise<void> }
+export interface PoolSql { connect(): Promise<ClienteSql>; end(): Promise<void> }
 
-export interface SesionGuardada { cuentaId: number; vence: number }
-export interface AlmacenSesionesAsync {
-    obtener(tokenHash: string): Promise<SesionGuardada | undefined>;
-    guardar(tokenHash: string, sesion: SesionGuardada): Promise<void>;
-    borrar(tokenHash: string): Promise<void>;
-    borrarDeCuenta(cuentaId: number, conservar?: string): Promise<void>;
-    limpiarVencidas(ahora: number): Promise<void>;
-}
-export interface BaseDatosPostgres {
-    leer(): Promise<Datos>;
-    guardar(datos: Datos): Promise<ResumenGuardado>;
-    sesiones: AlmacenSesionesAsync;
-    cerrar(): Promise<void>;
-}
-
-/** Traduce los marcadores `?` del plan al formato `$1, $2…` de PostgreSQL. */
 const marcadores = (sql: string) => { let i = 0; return sql.replace(/\?/g, () => `$${++i}`); };
-const metadato = async (c: ClienteSql | PoolSql, clave: string) =>
+const metadato = async (c: ClienteSql, clave: string) =>
     (await c.query('SELECT valor FROM metadatos WHERE clave=$1', [clave])).rows[0]?.valor as string | undefined;
 const escribirMetadato = (c: ClienteSql, clave: string, valor: string) =>
     c.query('INSERT INTO metadatos(clave,valor) VALUES ($1,$2) ON CONFLICT (clave) DO UPDATE SET valor=EXCLUDED.valor', [clave, valor]);
+const subirVersion = "UPDATE metadatos SET valor=(CAST(valor AS INTEGER)+1)::text WHERE clave='version'";
+
 async function crudosDe(c: ClienteSql): Promise<Crudos> {
     const crudos: Crudos = {};
     for (const t of TABLAS) crudos[t.nombre] = (await c.query(sqlLectura(t))).rows;
     return crudos;
 }
 
-/** Crea el esquema si falta y, la primera vez, siembra los datos iniciales. Un bloqueo de asesor evita carreras en arranques simultáneos. */
-export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos>): Promise<BaseDatosPostgres> {
+/**
+ * Sesiones de la solicitud: un espejo en memoria para el código síncrono. Cada cambio se anota y se
+ * aplica a la base al confirmar, dentro de la misma transacción que los datos.
+ */
+function almacenDeSesiones(filas: { token_hash: string; cuenta_id: number; vence: number }[]) {
+    const mapa = new Map(filas.map(f => [f.token_hash, { cuentaId: Number(f.cuenta_id), vence: Number(f.vence) }] as const));
+    const pendientes: Operacion[] = [];
+    const almacen: AlmacenSesiones = {
+        obtener: r => mapa.get(r),
+        guardar: (r, s) => {
+            mapa.set(r, s);
+            pendientes.push({ tabla: 'sesiones', sql: 'INSERT INTO sesiones(token_hash,cuenta_id,vence) VALUES (?,?,?) ON CONFLICT (token_hash) DO UPDATE SET cuenta_id=EXCLUDED.cuenta_id, vence=EXCLUDED.vence', params: [r, s.cuentaId, s.vence] });
+        },
+        borrar: r => {
+            mapa.delete(r);
+            pendientes.push({ tabla: 'sesiones', sql: 'DELETE FROM sesiones WHERE token_hash=?', params: [r] });
+        },
+        borrarDeCuenta: (cuentaId, conservar) => {
+            for (const [r, s] of mapa) if (s.cuentaId === cuentaId && r !== conservar) mapa.delete(r);
+            pendientes.push({ tabla: 'sesiones', sql: 'DELETE FROM sesiones WHERE cuenta_id=? AND token_hash IS DISTINCT FROM ?', params: [cuentaId, conservar ?? null] });
+        },
+        limpiarVencidas: ahora => {
+            for (const [r, s] of mapa) if (s.vence < ahora) mapa.delete(r);
+            pendientes.push({ tabla: 'sesiones', sql: 'DELETE FROM sesiones WHERE vence<?', params: [ahora] });
+        },
+    };
+    return { almacen, pendientes };
+}
+
+/** Crea el esquema si falta y, la primera vez, siembra los datos iniciales. El bloqueo de asesor evita carreras en arranques simultáneos. */
+export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos>): Promise<UnidadDeSolicitud & { cerrar(): Promise<void> }> {
     const init = await pool.connect();
     try {
         await init.query('BEGIN');
@@ -52,52 +66,37 @@ export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos
             for (const op of planificar(datos, estadoDesde({})).operaciones) await init.query(marcadores(op.sql), op.params);
             await escribirMetadato(init, 'inicializada', '1');
             await escribirMetadato(init, 'finanzasVersion', String(datos.finanzasVersion ?? 1));
+            await init.query(subirVersion);
         }
         await init.query('COMMIT');
-    } catch (e) { await init.query('ROLLBACK'); throw e; } finally { init.release(); }
+    } catch (e) { await init.query('ROLLBACK').catch(() => undefined); throw e; } finally { init.release(); }
 
     return {
-        leer: async () => {
-            const c = await pool.connect();
-            try {
-                await c.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-                const d = armarDatos(await crudosDe(c));
-                d.finanzasVersion = Number((await metadato(c, 'finanzasVersion')) ?? 1);
-                await c.query('COMMIT');
-                return d;
-            } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
-        },
-        guardar: async datos => {
+        ejecutar: async operacion => {
             const c = await pool.connect();
             try {
                 await c.query('BEGIN');
                 await c.query("SELECT valor FROM metadatos WHERE clave='version' FOR UPDATE");
-                const { operaciones, resumen } = planificar(datos, estadoDesde(await crudosDe(c)));
-                for (const op of operaciones) await c.query(marcadores(op.sql), op.params);
-                if (operaciones.length) await c.query("UPDATE metadatos SET valor=(CAST(valor AS INTEGER)+1)::text WHERE clave='version'");
+                const crudos = await crudosDe(c);
+                const previo = estadoDesde(crudos);
+                const datos = armarDatos(crudos);
+                datos.finanzasVersion = Number((await metadato(c, 'finanzasVersion')) ?? 1);
+                const filas = (await c.query('SELECT token_hash, cuenta_id, vence FROM sesiones WHERE vence >= $1', [Date.now()])).rows;
+                const { almacen, pendientes } = almacenDeSesiones(filas);
+                const resultado = await operacion({ datos, sesiones: almacen });
+                const todas = [...planificar(datos, previo).operaciones, ...pendientes];
+                for (const op of todas) await c.query(marcadores(op.sql), op.params);
+                if (todas.length) await c.query(subirVersion);
                 await escribirMetadato(c, 'finanzasVersion', String(datos.finanzasVersion ?? 1));
                 await c.query('COMMIT');
-                return resumen;
-            } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
-        },
-        sesiones: {
-            obtener: async r => {
-                const f = (await pool.query('SELECT cuenta_id, vence FROM sesiones WHERE token_hash=$1', [r])).rows[0];
-                return f && { cuentaId: Number(f.cuenta_id), vence: Number(f.vence) };
-            },
-            guardar: async (r, s) => void await pool.query(
-                'INSERT INTO sesiones(token_hash,cuenta_id,vence) VALUES ($1,$2,$3) ON CONFLICT (token_hash) DO UPDATE SET cuenta_id=EXCLUDED.cuenta_id, vence=EXCLUDED.vence',
-                [r, s.cuentaId, s.vence]),
-            borrar: async r => void await pool.query('DELETE FROM sesiones WHERE token_hash=$1', [r]),
-            borrarDeCuenta: async (cuentaId, conservar) => void await pool.query(
-                'DELETE FROM sesiones WHERE cuenta_id=$1 AND token_hash IS DISTINCT FROM $2', [cuentaId, conservar ?? null]),
-            limpiarVencidas: async ahora => void await pool.query('DELETE FROM sesiones WHERE vence<$1', [ahora]),
+                return resultado;
+            } catch (e) { await c.query('ROLLBACK').catch(() => undefined); throw e; } finally { c.release(); }
         },
         cerrar: () => pool.end(),
     };
 }
 
-/** Pool real para Neon. Se importa aquí para que las pruebas no dependan de pg. */
+/** Pool real para Neon. Se importa aquí para que las pruebas y el desarrollo local no carguen pg. */
 export async function poolPostgres(conexion: string): Promise<PoolSql> {
     const { Pool } = await import('pg');
     return new Pool({ connectionString: conexion, max: 3 }) as unknown as PoolSql;

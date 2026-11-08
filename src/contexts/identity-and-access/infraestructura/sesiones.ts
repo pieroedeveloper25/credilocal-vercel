@@ -32,7 +32,7 @@ const DURACION_SESION = 8 * 3600000;
 /** Intentos fallidos: por cuenta y perfil desde un origen, y en total por origen. */
 const VENTANA = 600000, MAX_POR_CUENTA = 10, MAX_POR_ORIGEN = 40, MAX_CAMBIO_CLAVE = 5, MAX_REGISTROS = 5000;
 /** Contador de fallos acotado: descarta los vencidos y, si aun así hay demasiados, los más antiguos. */
-function crearLimitador() {
+export function crearLimitador() {
     const fallos = new Map<string, { n: number; hasta: number }>();
     const depurar = () => {
         const ahora = Date.now();
@@ -63,8 +63,8 @@ function crearLimitador() {
 /** La cookie solo viaja por HTTPS cuando la conexión (o el proxy que la termina) lo es. */
 const atributosCookie = (req: IncomingMessage) =>
     `HttpOnly; SameSite=Strict; Path=/${(req.socket as { encrypted?: boolean }).encrypted || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`;
-export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria()) {
-    const limitador = crearLimitador();
+export type Limitador = ReturnType<typeof crearLimitador>;
+export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), limitador: Limitador = crearLimitador()) {
     const cookie = (req: IncomingMessage) => /\bcredilocal=([a-f0-9]{64})\b/.exec(req.headers.cookie ?? '')?.[1];
     const sesionDe = (req: IncomingMessage, f: FuenteDeAcceso): Sesion => {
         const token = cookie(req), s = token ? sesiones.obtener(resumen(token)) : undefined;

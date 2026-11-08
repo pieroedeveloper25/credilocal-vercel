@@ -30,3 +30,8 @@ export interface AlmacenSesiones {
 export interface CreadorDeCuentas {
     crearCuenta(correo: string, clave: string, rol: Rol, id: number, tiendaId?: number, clienteId?: number): Promise<Cuenta>;
 }
+
+/** Lo que una solicitud ve: una fotografía coherente de los datos y las sesiones vigentes. */
+export interface ContextoSolicitud { datos: Datos; sesiones: AlmacenSesiones }
+/** Ejecuta una solicitud como unidad atómica: confirma solo si termina sin error. */
+export interface UnidadDeSolicitud { ejecutar<T>(operacion: (contexto: ContextoSolicitud) => T | Promise<T>): Promise<T> }

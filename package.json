@@ -5,16 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/compilar-servidor.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/generar-cabeceras.mjs && node scripts/compilar-servidor.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "start": "node servidor-dist/main.mjs",
     "test:api": "node --test pruebas/api.test.mjs",
-    "test:arquitectura": "node --test pruebas/arquitectura.test.mjs",
-    "demo:crear": "node servidor-dist/demo.mjs",
-    "demo:iniciar": "node scripts/iniciar-demo.mjs",
-    "test:demo": "node --test pruebas/demo.test.mjs",
-    "test:persistencia": "node --test pruebas/persistencia.test.mjs"
+    "test:arquitectura": "node --test pruebas/arquitectura.test.mjs"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",
