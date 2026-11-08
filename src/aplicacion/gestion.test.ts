@@ -7,8 +7,8 @@ import { validarCliente } from '../contexts/customer-management/dominio/validaci
 import { validarTienda } from '../contexts/identity-and-access/dominio/validaciones';
 import { comprobarClave, crearCuenta } from '../contexts/identity-and-access/infraestructura/credenciales';
 import { validarProducto } from '../contexts/product-catalog/dominio/validaciones';
-import { CLIENTES } from '../infraestructura/demostracion/datos';
-import { comprasDe } from '../infraestructura/migracion/liquidacionLegada';
+import { CLIENTES } from '../../pruebas/fixtures/demostracion/datos';
+import { comprasDe } from '../../pruebas/fixtures/migracion/liquidacionLegada';
 import type { Datos } from '../shared/dominio/datos';
 import { D } from '../shared/dominio/decimal';
 import { fechaValida, parseFecha } from '../shared/dominio/fechas';

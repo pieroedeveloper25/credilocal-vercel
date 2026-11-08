@@ -4,7 +4,7 @@ import type { Operacion } from './ejecutarOperacion';
 import { repositoriosSobre } from '../infraestructura/persistencia/repositoriosSobreDatos';
 import { liquidarObligaciones } from '../contexts/billing-and-collections/aplicacion/../dominio/obligaciones';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
-import { CLIENTES, PRODUCTOS } from '../infraestructura/demostracion/datos';
+import { CLIENTES, PRODUCTOS } from '../../pruebas/fixtures/demostracion/datos';
 import type { Datos } from '../shared/dominio/datos';
 import { casosSobre } from '../infraestructura/persistencia/casosSobreDatos';
 import type { CasosDeUso } from './casosDeUso';

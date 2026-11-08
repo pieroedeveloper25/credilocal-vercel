@@ -19,7 +19,7 @@ test('dos sesiones independientes guardan simultáneamente sin perder clientes n
  const r=await Promise.all([op(a,'GUARDAR CLIENTE',{registro:cliente(base,'11111111','Simultáneo A')}),op(b,'GUARDAR CLIENTE',{registro:cliente(base,'22222222','Simultáneo B')})]);assert.ok(r.every(x=>x.codigo===200));
  const estado=(await a('estado')).datos;const nuevos=estado.clientes.filter(c=>c.nombre.startsWith('Simultáneo'));assert.equal(nuevos.length,2);assert.notEqual(nuevos[0].id,nuevos[1].id);
  const superadmin=app.sesion();await entrar(superadmin,'Superadministrador','sistema@credilocal.pe');const tienda={id:-1,ruc:'20999999999',razon:'Bodega Prueba SAC',nombre:'Bodega Prueba',giro:'Bodega',direccion:'Lima',telefono:'',correo:'bodega@prueba.pe',activa:true};assert.equal((await op(superadmin,'GUARDAR TIENDA',{registro:tienda,clave:'Prueba2026'})).codigo,200);
- const otra=app.sesion();assert.equal((await entrar(otra,'Comercio','bodega@prueba.pe','Prueba2026')).codigo,200);assert.equal((await otra('estado')).datos.clientes.length,0);
+ const otra=app.sesion();assert.equal((await entrar(otra,'Comercio','bodega@prueba.pe','Prueba2026')).codigo,200);assert.equal((await otra('clave',{actual:'Prueba2026',nueva:'OtraClave2026'})).codigo,200);assert.equal((await otra('estado')).datos.clientes.length,0);
  assert.equal((await op(otra,'GUARDAR CLIENTE',{registro:{...estado.clientes[0],nombre:'Ajeno'}})).codigo,400);assert.equal((await otra('estado')).datos.ventas.length,0);
  }finally{await app.cerrar();}
 });
@@ -350,4 +350,24 @@ test('regresión retos: mora, parciales, compra tras corte, límite y horario', 
   await entrar(admin, 'Superadministrador', 'sistema@credilocal.pe');
   assert.ok((await admin('auditoria')).datos.some(r => /retroact/i.test(r.detalle ?? '')));
  } finally { await app.cerrar(); }
+});
+
+test('clave provisional: hasta cambiarla solo se permite cambiar la clave; después la cuenta opera normal',async()=>{
+ const app=await entorno();try{
+  const su=app.sesion();await entrar(su,'Superadministrador','sistema@credilocal.pe');
+  const tienda={id:-1,ruc:'20888888888',razon:'Ferretería Nueva SAC',nombre:'Ferretería Nueva',giro:'Ferretería',direccion:'Lima',telefono:'',correo:'nueva@prueba.pe',activa:true};
+  assert.equal((await op(su,'GUARDAR TIENDA',{registro:tienda,clave:'Prueba2026'})).codigo,200);
+  const previa=app.sesion();await entrar(previa,'Comercio','nueva@prueba.pe','Prueba2026');
+  const nuevo=app.sesion();const l=await entrar(nuevo,'Comercio','nueva@prueba.pe','Prueba2026');
+  assert.equal(l.codigo,200);assert.equal(l.datos.sesion.claveProvisional,true);
+  assert.equal((await nuevo('estado')).codigo,403);
+  assert.equal((await op(nuevo,'GUARDAR CLIENTE',{registro:{}})).codigo,403);
+  assert.equal((await nuevo('clave',{actual:'incorrecta1',nueva:'NuevaClave2026'})).codigo,400);
+  assert.equal((await nuevo('clave',{actual:'Prueba2026',nueva:'NuevaClave2026'})).codigo,200);
+  assert.equal((await nuevo('estado')).codigo,200);
+  const otra=app.sesion();const l2=await entrar(otra,'Comercio','nueva@prueba.pe','NuevaClave2026');
+  assert.equal(l2.datos.sesion.claveProvisional,false);
+  assert.equal((await previa('estado')).codigo,401,'las demás sesiones de la cuenta se cierran al cambiar la clave');
+  assert.equal((await nuevo('estado')).codigo,200,'la sesión que cambió la clave sigue abierta');
+ }finally{await app.cerrar();}
 });

@@ -3,7 +3,7 @@ import { PasswordInput } from './overlays';
 import { useRef, useState } from 'react';
 import { api } from '../api';
 import { Field } from './ui';
-const claveValida = (s: string) => s.length >= 8 && s.length <= 64 && /[a-zA-Z]/.test(s) && /\d/.test(s);
+export const claveValida = (s: string) => s.length >= 8 && s.length <= 64 && /[a-zA-Z]/.test(s) && /\d/.test(s);
 /** Botón y diálogo para que la persona usuaria cambie la contraseña de su propia cuenta. */
 export function CambiarClave() {
     const dialogo = useRef<HTMLDialogElement>(null);

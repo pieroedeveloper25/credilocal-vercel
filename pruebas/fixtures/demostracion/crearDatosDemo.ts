@@ -2,17 +2,17 @@ import { readFileSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { iniciales } from './iniciales';
 import { normalizarFinanzas } from '../migracion/normalizarFinanzas';
-import { crearCuenta } from '../../contexts/identity-and-access/infraestructura/credenciales';
-import { validarTienda } from '../../contexts/identity-and-access/dominio/validaciones';
-import { validarCliente } from '../../contexts/customer-management/dominio/validaciones';
-import { validarProducto } from '../../contexts/product-catalog/dominio/validaciones';
-import type { Producto, CreditoImagen } from '../../contexts/product-catalog/dominio/modelos';
-import type { Cliente } from '../../contexts/customer-management/dominio/modelos';
-import { casosSobre } from '../persistencia/casosSobreDatos';
-import { liquidarObligaciones } from '../../contexts/billing-and-collections/dominio/obligaciones';
-import { D, r2 } from '../../shared/dominio/decimal';
-import { fechaValida, parseFecha, isoFecha, establecerDia, relojPeru } from '../../shared/dominio/fechas';
-import { exigir } from '../../shared/dominio/validaciones';
+import { crearCuenta } from '../../../src/contexts/identity-and-access/infraestructura/credenciales';
+import { validarTienda } from '../../../src/contexts/identity-and-access/dominio/validaciones';
+import { validarCliente } from '../../../src/contexts/customer-management/dominio/validaciones';
+import { validarProducto } from '../../../src/contexts/product-catalog/dominio/validaciones';
+import type { Producto, CreditoImagen } from '../../../src/contexts/product-catalog/dominio/modelos';
+import type { Cliente } from '../../../src/contexts/customer-management/dominio/modelos';
+import { casosSobre } from '../../../src/infraestructura/persistencia/casosSobreDatos';
+import { liquidarObligaciones } from '../../../src/contexts/billing-and-collections/dominio/obligaciones';
+import { D, r2 } from '../../../src/shared/dominio/decimal';
+import { fechaValida, parseFecha, isoFecha, establecerDia, relojPeru } from '../../../src/shared/dominio/fechas';
+import { exigir } from '../../../src/shared/dominio/validaciones';
 
 interface EntradaCatalogo extends Omit<Producto, 'imagen' | 'proveedor' | 'activo'> {
     archivo: string;

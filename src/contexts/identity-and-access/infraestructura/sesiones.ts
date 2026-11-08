@@ -76,7 +76,7 @@ export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), l
             exigir(f.tiendaActiva(a.tiendaId), 'La tienda está dada de baja.');
         if (a.rol === 'Cliente')
             exigir(f.clienteActivo(a.clienteId, a.tiendaId), 'El cliente está dado de baja.');
-        return { rol: a.rol, correo: a.correo, tiendaId: a.tiendaId ?? 0, clienteId: a.clienteId ?? -1 };
+        return { rol: a.rol, correo: a.correo, tiendaId: a.tiendaId ?? 0, clienteId: a.clienteId ?? -1, claveProvisional: a.claveProvisional === true };
     };
     /**
      * Inicia sesión. Si el hash de la cuenta es de un formato o costo anteriores, lo renueva y avisa con
@@ -146,7 +146,7 @@ export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), l
         }
         exigirClaveValida(nueva);
         exigir(nueva !== actual, 'La nueva contraseña debe ser distinta de la actual.');
-        const renovada = await conClave(a, nueva);
+        const renovada = { ...(await conClave(a, nueva)), claveProvisional: false };
         f.cuentas.reemplazar(renovada);
         sesiones.borrarDeCuenta(a.id, resumen(token));
         limitador.olvidar(llave);

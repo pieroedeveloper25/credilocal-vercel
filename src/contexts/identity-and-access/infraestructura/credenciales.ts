@@ -25,7 +25,7 @@ export async function crearCuenta(correo: string, clave: string, rol: Rol, id: n
     exigir(correo.trim().length >= 5 && correo.trim().length <= 100, 'El correo debe tener entre 5 y 100 caracteres.');
     exigir(clave.length >= 8 && clave.length <= 64 && /[a-zA-Z]/.test(clave) && /\d/.test(clave), 'La contraseña inicial requiere entre 8 y 64 caracteres, letras y números.');
     const sal = nuevaSal();
-    return { id, rol, correo: normalizarCorreo(correo), sal, hash: await hashNuevo(clave, sal), tiendaId, clienteId };
+    return { id, rol, correo: normalizarCorreo(correo), sal, hash: await hashNuevo(clave, sal), tiendaId, clienteId, claveProvisional: true };
 }
 /** Compara en tiempo constante. */
 export async function comprobarClave(c: Cuenta, clave: string): Promise<boolean> {

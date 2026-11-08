@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { imputarPorPrelacion } from '../../billing-and-collections/dominio/prelacion';
 import { convertirTasas, generarCronogramaFrances, liquidarFinDeMes, resolverCiclo } from './motor';
 import { compraPermitida, lineaDisponible } from '../../customer-management/dominio/lineaCredito';
-import { CLIENTES } from '../../../infraestructura/demostracion/datos';
+import { CLIENTES } from '../../../../pruebas/fixtures/demostracion/datos';
 import { D } from '../../../shared/dominio/decimal';
 import { diasEntre, establecerDia, isoFecha, parseFecha } from '../../../shared/dominio/fechas';
 

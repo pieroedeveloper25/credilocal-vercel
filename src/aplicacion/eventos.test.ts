@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { deudaLinea } from '../contexts/billing-and-collections/dominio/obligaciones';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
 import { saldoComprometidoDe } from '../contexts/customer-management/dominio/lineaCredito';
-import { CLIENTES, PRODUCTOS } from '../infraestructura/demostracion/datos';
+import { CLIENTES, PRODUCTOS } from '../../pruebas/fixtures/demostracion/datos';
 import { crearBusDeEventos } from '../shared/aplicacion/busDeEventos';
 import type { Datos } from '../shared/dominio/datos';
 import { casosSobre } from '../infraestructura/persistencia/casosSobreDatos';

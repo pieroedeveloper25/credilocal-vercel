@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { SessionProvider, useSesion } from './session';
 import { StoreProvider } from './store';
 import { Shell, ShellCliente } from './components/Shell';
+import { CambiarClaveObligatoria } from './components/CambiarClaveObligatoria';
 import { Login } from './screens/Login';
 import { Dashboard } from './screens/Dashboard';
 import { Clientes } from './screens/Clientes';
@@ -36,6 +37,9 @@ function Enrutador() {
         return () => window.removeEventListener('hashchange', f);
     }, []);
     // Sin sesión: siempre el acceso, sin importar qué ruta se haya pedido. Antes se espera la respuesta del servidor.
+    // Primer ingreso con clave provisional: nada más se carga hasta que la persona la cambie.
+    if (sesion?.claveProvisional && !restaurando)
+        return <CambiarClaveObligatoria />;
     if (restaurando || (sesion && !datosListos))
         return <Cargando error={errorBase}/>;
     if (!sesion)

@@ -3,7 +3,7 @@ import { casosSobre } from '../infraestructura/persistencia/casosSobreDatos';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
 import type { Sesion } from '../contexts/identity-and-access/dominio/modelos';
 import { validarProducto } from '../contexts/product-catalog/dominio/validaciones';
-import { CLIENTES, PRODUCTOS } from '../infraestructura/demostracion/datos';
+import { CLIENTES, PRODUCTOS } from '../../pruebas/fixtures/demostracion/datos';
 import type { Datos } from '../shared/dominio/datos';
 import { siguienteId } from '../shared/dominio/validaciones';
 

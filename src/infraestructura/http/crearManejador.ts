@@ -96,6 +96,9 @@ export function crearManejador(o: OpcionesManejador) {
                     return respuesta(200, { sesion: vigente });
                 }
                 const s = sesiones.obtener(req, acceso);
+                // Con clave provisional solo se permite cambiarla: ninguna otra operación o consulta.
+                if (s.claveProvisional && url.pathname !== '/api/clave')
+                    throw new ErrorHttp(403, 'Debe cambiar la contraseña provisional antes de continuar.');
                 if (url.pathname === '/api/accesos-clientes' && req.method === 'GET') {
                     exigir(s.rol === 'Comercio', 'Esta consulta requiere el perfil Comercio.');
                     const tiendaActiva = d.tiendas.some(t => t.id === s.tiendaId && t.activa);

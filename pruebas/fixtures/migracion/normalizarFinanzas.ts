@@ -2,10 +2,10 @@ import { IMAGEN_PREDETERMINADA } from '../demostracion/imagenPredeterminada';
 import { COMPRAS } from '../demostracion/datos';
 import { IMAGENES_TALLER } from '../demostracion/imagenesTaller';
 import { FOTOS_TALLER, CREDITOS_TALLER } from '../demostracion/fotosTaller';
-import { contextoListado, deudaLinea } from '../../contexts/billing-and-collections/dominio/obligaciones';
-import { convertirTasas } from '../../contexts/credit-origination/dominio/motor';
-import { condicionesDe, crearObligaciones } from '../../contexts/credit-origination/dominio/obligaciones';
-import type { Datos } from '../../shared/dominio/datos';
+import { contextoListado, deudaLinea } from '../../../src/contexts/billing-and-collections/dominio/obligaciones';
+import { convertirTasas } from '../../../src/contexts/credit-origination/dominio/motor';
+import { condicionesDe, crearObligaciones } from '../../../src/contexts/credit-origination/dominio/obligaciones';
+import type { Datos } from '../../../src/shared/dominio/datos';
 /** Migración única de la demostración anterior, conservando ventas y pagos existentes. */
 export function normalizarFinanzas(d: Datos) {
     for (const p of d.productos) {

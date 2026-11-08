@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ClienteAgregado } from './cliente';
 import type { Cliente } from './modelos';
-import { CLIENTES } from '../../../infraestructura/demostracion/datos';
+import { CLIENTES } from '../../../../pruebas/fixtures/demostracion/datos';
 
 const base = (): Cliente => ({ ...CLIENTES[0], id: 7, tiendaId: 1, activo: true, horaCorte: '18:00', limite: '5000.00', correo: '' });
 const sinCompras = { otrosDeLaTienda: [] as Cliente[], huboComprasEnElMes: () => false };

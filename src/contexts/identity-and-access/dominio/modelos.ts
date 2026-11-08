@@ -8,6 +8,8 @@ export interface Cuenta {
     correo: string;
     sal: string;
     hash: string;
+    /** true mientras la clave es la inicial entregada por el sistema; debe cambiarse antes de operar. */
+    claveProvisional?: boolean;
 }
 
 export interface Tienda {
@@ -27,4 +29,5 @@ export interface Sesion {
     clienteId: number;
     tiendaId: number;
     correo: string;
+    claveProvisional?: boolean;
 }

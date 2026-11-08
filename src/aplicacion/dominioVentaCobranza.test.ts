@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { cobrar } from '../contexts/billing-and-collections/dominio/cobranza';
 import { registrarVenta } from '../contexts/credit-origination/dominio/venta';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
-import { CLIENTES, PRODUCTOS } from '../infraestructura/demostracion/datos';
+import { CLIENTES, PRODUCTOS } from '../../pruebas/fixtures/demostracion/datos';
 
 const cliente = (): Cliente => ({ ...CLIENTES[0], id: 50, tiendaId: 1, activo: true, horaCorte: '18:00', limite: '5000.00' });
 const catalogo = { buscar: (tiendaId: number, sku: string) => PRODUCTOS.map(p => ({ ...p, tiendaId, activo: true })).find(p => p.sku === sku) };

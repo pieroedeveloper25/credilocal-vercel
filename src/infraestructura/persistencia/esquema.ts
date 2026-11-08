@@ -54,7 +54,7 @@ export const TABLAS: Tabla[] = [
             ['limite', 'T'], ['deuda', 'T'], ['saldoComprometido', 'T'], ['moneda', 'T'], ['plazo', 'I'], ['diaCorte', 'I'], ['diaPago', 'I'], ['horaCorte', 'T'],
             ['tipoC', 'T'], ['valC', 'T'], ['capC', 'T'], ['tipoM', 'T'], ['valM', 'T'], ['capM', 'T']] },
     { nombre: 'cuentas', lista: 'cuentas', clave: 'id', restricciones: ['UNIQUE (correo)', 'UNIQUE (cliente_id)', fk('tienda_id', 'tiendas', 'id'), fk('cliente_id', 'clientes', 'id'), valores('rol', 'Superadministrador', 'Comercio', 'Cliente')],
-        columnas: [['id', 'I'], ['tiendaId', 'I'], ['clienteId', 'I'], ['correo', 'T'], ['sal', 'T'], ['hash', 'T'], ['rol', 'T']] },
+        columnas: [['id', 'I'], ['tiendaId', 'I'], ['clienteId', 'I'], ['correo', 'T'], ['sal', 'T'], ['hash', 'T'], ['rol', 'T'], ['claveProvisional', 'B']] },
     { nombre: 'productos', lista: 'productos', clave: 'tienda_id, sku', restricciones: [fk('tienda_id', 'tiendas', 'id'), valores('modalidad', 'Ambas', 'Fin de mes', 'Cuotas')],
         columnas: [['tiendaId', 'I'], ['sku', 'T'], ['nombre', 'T'], ['descripcion', 'T'], ['marca', 'T'], ['proveedor', 'T'], ['unidad', 'T'], ['imagen', 'T'], ['imagenCredito', 'J'],
             ['contado', 'T'], ['credito', 'T'], ['modalidad', 'T'], ['activo', 'B']] },
