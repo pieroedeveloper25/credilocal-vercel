@@ -1,0 +1,26 @@
+.ops-editor > .ops-back { margin-bottom: 1.5rem; }
+.ops-editor > h2, .ops-heading > h2 { margin: 0; line-height: 1.25; }
+.ops-editor > .form-grid { margin-block: 1.5rem; }
+.ops-editor > .actions, .ops-editor > .acciones { margin-top: 1.5rem; }
+.ops-editor .form-section { border-top: 1px solid var(--line); padding-top: 1rem; }
+.ops-heading, .product-price { display: flex; justify-content: space-between; align-items: center; gap: .75rem; }
+.product-tile { cursor: pointer; text-align: start; font: inherit; color: var(--ink); }
+.product-tile:hover { border-color: var(--accent); }
+.product-tile .catalog-photo { height: 10rem; width: 100%; object-fit: contain; }
+.product-tile small, .product-price { color: var(--muted); }
+.product-price b { color: var(--ink); }
+.product-detail { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(15rem,100%),1fr)); gap: 2rem; margin-top: 1.5rem; }
+.product-detail img { width: 100%; max-height: 20rem; object-fit: contain; }
+.product-detail dl > div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
+.product-detail dd { text-align: end; margin: 0; overflow-wrap: anywhere; }
+.ops-table { max-width: 100%; overflow-x: auto; }
+.ops-sale .picker-open { flex:1; min-width:0; text-align:start; display:flex; justify-content:space-between; flex-wrap:wrap; }
+.ops-sale .picker-choice { width:100%; }
+.quantity-control { display:inline-flex; align-items:stretch; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; }
+.quantity-control button { cursor:pointer; min-width:2rem; min-height:2.75rem; border:0; background:var(--raise); color:var(--ink); }
+.quantity-control button:disabled { opacity:.45; cursor:default; }
+.quantity-control .in { width:4.5rem; text-align:center; height:auto; border:0; border-radius:0; padding-inline:.25rem; }
+.quantity-control :focus-visible { outline-offset:-3px; }
+.ops-column-help { font-size:.75rem; text-transform:none; letter-spacing:normal; font-weight:normal; }
+.ops-column-help summary { cursor:pointer; color:var(--accent-ink); }
+.ops-column-help span { display:block; max-width:13rem; white-space:normal; }

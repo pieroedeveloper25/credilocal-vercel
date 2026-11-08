@@ -1,0 +1,6 @@
+.cliente-editor .form-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px 24px; align-items:start; }
+.cliente-editor .form-grid > * { min-width:0; }
+.cliente-editor .cliente-seccion { grid-column:1/-1; margin:12px 0 0; }
+.cliente-editor .form-grid .lbl { min-height:2.4em; align-items:center; }
+.cliente-editor h1 { font:600 clamp(1.5rem,3vw,2.1rem)/1.2 var(--sans); }
+@media(max-width:720px) { .cliente-editor .form-grid { grid-template-columns:1fr; } .cliente-editor .form-grid .lbl { min-height:0; } }

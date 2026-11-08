@@ -1,0 +1,11 @@
+.cuenta-consulta, .auditoria-panel { display:grid; gap:1.25rem; }
+.cuenta-consulta > .head { margin-bottom:0; }
+.cuenta-selector { display:grid; gap:1rem; justify-items:start; }
+.cuenta-selector .client-picker { width:min(100%,34rem); }
+.cuenta-selector h2 { font-size:1.15rem; margin:0 0 .4rem; }
+.cuenta-consulta .tabs { padding:.5rem; gap:.5rem; flex-wrap:wrap; }
+.cuenta-consulta .actions { gap:.75rem; }
+.cuenta-consulta .card:has(> .actions) > .actions { margin-top:1rem; }
+.auditoria-panel > .table-scroll { max-width:100%; min-width:0; }
+.auditoria-panel { grid-template-columns:minmax(0,1fr); }
+.auditoria-panel tbody td:first-child { font-variant-numeric:tabular-nums; font-weight:600; }

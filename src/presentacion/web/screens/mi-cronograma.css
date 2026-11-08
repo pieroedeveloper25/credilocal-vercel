@@ -1,0 +1,15 @@
+.cronograma-movil { display: none; }
+@media (max-width: 740px) {
+  .cronograma-escritorio { display: none; }
+  .cronograma-movil { display: grid; gap: 10px; min-width: 0; }
+  .cronograma-movil h2 { margin: 0; font-size: 1.125rem; }
+  .cronograma-ficha { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .cronograma-resumen { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; width: 100%; padding: 14px; background: transparent; border: 0; border-radius: inherit; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .cronograma-resumen small { display: block; margin-top: 4px; color: var(--muted); }
+  .cronograma-importe { text-align: right; }
+  .cronograma-resumen[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .cronograma-ficha dl { margin: 0 14px; padding: 6px 0 10px; border-top: 1px solid var(--line); }
+  .cronograma-ficha dl > div, .cronograma-total { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; padding-block: 5px; }
+  .cronograma-ficha dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .cronograma-total { margin: 0; }
+}
