@@ -79,23 +79,21 @@ export function generarCronogramaFrances(a: {
 }): Cronograma {
   const { capital, fechaCompra: fc, ted, tem, nMeses: n } = a;
   if (!capital.isFinite() || capital.lte(0) || !Number.isInteger(n) || n<1 || ted.lt(0) || tem.lt(0)) throw new ErrorDeDominio('Capital, tasa o plazo inválido.');
-  const y = fc.getUTCFullYear();
-  const m = fc.getUTCMonth() + 1;
-  const base = establecerDia(y, m, a.diaPago);
+  // El ciclo que factura la compra (antes o después del corte) fija el fin de la gracia: su fecha de pago.
+  // Compra después del corte → gracia hasta el pago del ciclo siguiente (QA-ALG-01, alternativa B).
+  const base = resolverCiclo(fc, a.diaCorte, a.diaPago, a.hora, a.horaCorte).vencimiento;
+  const yb = base.getUTCFullYear();
+  const mb = base.getUTCMonth() + 1;
 
-  let diasGracia = 0;
-  let capitalAjustado = capital;
-  if (antesDelCorte(fc, a.diaCorte, a.hora, a.horaCorte)) {
-    diasGracia = diasEntre(fc, base);
-    capitalAjustado = r2(capital.mul(ted.plus(1).pow(diasGracia)));
-  }
+  const diasGracia = diasEntre(fc, base);
+  const capitalAjustado = r2(capital.mul(ted.plus(1).pow(diasGracia)));
   const interesGracia = r2(capitalAjustado.minus(capital));
 
   const f = tem.plus(1).pow(n);
   const cuotaFija = tem.isZero() ? r2(capitalAjustado.div(n)) : r2(capitalAjustado.mul(tem.mul(f).div(f.minus(1))));
 
   const filas: FilaCronograma[] = [{
-    k: 0, fecha: antesDelCorte(fc,a.diaCorte,a.hora,a.horaCorte) ? base : fc, gracia: diasGracia > 0 ? `T (${diasGracia} d)` : 'S', diasPeriodo: diasGracia,
+    k: 0, fecha: base, gracia: diasGracia > 0 ? `T (${diasGracia} d)` : 'S', diasPeriodo: diasGracia,
     saldoInicial: capital, interes: interesGracia, cuota: CERO, amortizacion: CERO, saldoFinal: capitalAjustado,
   }];
 
@@ -107,7 +105,7 @@ export function generarCronogramaFrances(a: {
     if (k === n) { amort = si; cuota = r2(amort.plus(interes)); sf = CERO; }   // ajuste final: SF_n = 0.00 exacto
     else { cuota = cuotaFija; amort = r2(cuota.minus(interes)); sf = r2(si.minus(amort)); }
     if (cuota.lte(0) || amort.lt(0) || amort.gt(si) || sf.lt(0)) throw new ErrorDeDominio('El monto y plazo generan cuotas inválidas al redondear a centavos. Aumente el monto o reduzca las cuotas.');
-    filas.push({ k, fecha: establecerDia(y, m + k, a.diaPago), gracia: 'S', diasPeriodo: 30, saldoInicial: si, interes, cuota, amortizacion: amort, saldoFinal: sf });
+    filas.push({ k, fecha: establecerDia(yb, mb + k, a.diaPago), gracia: 'S', diasPeriodo: 30, saldoInicial: si, interes, cuota, amortizacion: amort, saldoFinal: sf });
     totalIntereses = totalIntereses.plus(interes); totalCuotas = totalCuotas.plus(cuota); totalAmortizado = totalAmortizado.plus(amort);
     si = sf;
   }

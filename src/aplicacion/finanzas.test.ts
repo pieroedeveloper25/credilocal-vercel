@@ -108,7 +108,8 @@ describe('integración de los cinco algoritmos',()=>{
   const d=datos();const v=registrarCompra(d,1,{clienteId:50,fecha:'2026-09-20',hora:'18:01',capital:'1200',modalidad:'Fin de mes',n:1,detalle:'',items:[{sku:'KIT-001',cantidad:'1'}]});
   expect(d.obligaciones![0].vencimiento).toBe('2026-10-26');
   expect(()=>emitirCorte(d,1,50,'2026-10','2026-10-20T17:59')).toThrow('todavía');
-  const o=crearObligaciones({...v,id:3,modalidad:'Cuotas',n:3},d.clientes[0]);expect(o[0].vencimiento).toBe('2026-10-26');
+  // Cuotas tras el corte: la gracia llega al 26/10 y la primera cuota vence el 26/11 (QA-ALG-01, alternativa B).
+  const o=crearObligaciones({...v,id:3,modalidad:'Cuotas',n:3},d.clientes[0]);expect(o[0].vencimiento).toBe('2026-11-26');
  });
  it('rechaza precios manipulados, productos ajenos, cantidades inválidas y límites excedidos',()=>{
   const d=datos();const args={clienteId:50,fecha:'2026-09-10',hora:'12:00',capital:'1',modalidad:'Fin de mes' as const,n:1,detalle:'',items:[{sku:'KIT-001',cantidad:'1'}]};

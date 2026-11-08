@@ -74,7 +74,8 @@ describe('fecha y hora de corte',()=>{
     const t=convertirTasas('Efectiva',30);
     const args={capital:D(4500),fechaCompra:parseFecha('2026-09-20'),diaCorte:20,diaPago:26,ted:t.ted,tem:t.tem,nMeses:3,horaCorte:'18:00'};
     expect(generarCronogramaFrances({...args,hora:'17:59'}).diasGracia).toBe(6);
-    expect(generarCronogramaFrances({...args,hora:'18:01'}).diasGracia).toBe(0);
+    // Después del corte la gracia llega hasta el pago del ciclo que factura (26/10): 36 días (QA-ALG-01, alternativa B).
+    expect(generarCronogramaFrances({...args,hora:'18:01'}).diasGracia).toBe(36);
   });
   it('rechaza fechas imposibles y amortiza créditos sin interés',()=>{
     expect(fechaValida('2026-02-30')).toBe(false);

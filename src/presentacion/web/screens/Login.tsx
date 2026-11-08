@@ -69,7 +69,7 @@ export function Login() {
     return (<div className="login-wrap page">
       <div className="theme-corner"><ThemeToggle /></div>
       <div className="login-card rv" style={idx(0)}>
-        <aside className="access-art" aria-label="CrediLocal, cuenta corriente comercial">
+        <aside className="access-art" aria-label="CrediLocal">
           <div className="access-brand"><Logo size={40}/><strong>CrediLocal</strong></div>
           <svg className="access-store" aria-hidden="true" viewBox="0 0 360 240" fill="none">
             <g stroke="#8AA9C4" strokeWidth="2" strokeLinejoin="round">
@@ -83,7 +83,6 @@ export function Login() {
               <g transform="rotate(8 257 172)"><rect x="222" y="129" width="75" height="91" rx="7" fill="#EAF2F8"/><path d="M235 150h47m-47 12h47m-47 12h24m-24 23h21" stroke="#3E5C76"/><path d="m264 190 5 5 11-12" stroke="#3E5C76" strokeWidth="3"/></g>
             </g>
           </svg>
-          <p>Cuenta corriente comercial</p>
         </aside>
         <div className="login-form-side">
           <div className="login-identity"><Logo size={34}/><strong>CrediLocal</strong></div>

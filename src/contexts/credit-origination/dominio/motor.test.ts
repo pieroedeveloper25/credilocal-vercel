@@ -110,3 +110,13 @@ describe('datos exactos del informe 6.4', () => {
     expect(c.filas.map(x => isoFecha(x.fecha))).toEqual(['2026-09-26', '2026-10-26', '2026-11-26', '2026-12-26']);
   });
 });
+
+it('compra 25/09 tras el corte: gracia hasta el pago del ciclo que factura (26/10) y primera cuota el 26/11', () => {
+  const t = convertirTasas('Efectiva', 24);
+  const c = generarCronogramaFrances({ capital: D(300), fechaCompra: f('2026-09-25'), diaCorte: 20, diaPago: 26, ted: t.ted, tem: t.tem, nMeses: 3 });
+  expect(c.diasGracia).toBe(31);
+  expect(isoFecha(c.filas[0].fecha)).toBe('2026-10-26');
+  expect(isoFecha(c.filas[1].fecha)).toBe('2026-11-26');
+  expect(isoFecha(c.filas[3].fecha)).toBe('2027-01-26');
+  expect(c.cierra).toBe(true);
+});
