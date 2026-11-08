@@ -17,7 +17,26 @@ const obtener = () => api ??= (async () => {
     });
 })();
 
+// DIAGNOSTICO TEMPORAL: solo con DIAGNOSTICO=1, un 500 devuelve el error real. Quitar al terminar la prueba.
+const diagnostico = process.env.DIAGNOSTICO === '1';
+let ultimoError: string | undefined;
+if (diagnostico) {
+    const registrarError = console.error;
+    console.error = (...args: unknown[]) => {
+        ultimoError = args.map(a => a instanceof Error ? (a.stack ?? a.message) : String(a)).join(' ');
+        registrarError(...args);
+    };
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
+    if (diagnostico) {
+        const finOriginal = res.end.bind(res) as (...a: unknown[]) => unknown;
+        res.end = ((...a: unknown[]) => {
+            if (res.statusCode === 500 && ultimoError)
+                return finOriginal(JSON.stringify({ error: 'DIAGNOSTICO', detalle: ultimoError.slice(0, 3000) }));
+            return finOriginal(...a);
+        }) as typeof res.end;
+    }
     let instancia: Api;
     try {
         instancia = await obtener();
