@@ -22,8 +22,10 @@ const RUTAS_COMERCIO: Record<string, () => JSX.Element> = { dashboard: Dashboard
 const RUTAS_CLIENTE: Record<string, () => JSX.Element> = { 'mi-estado': MiEstado, 'mi-cronograma': MiCronograma };
 const rutaActual = () => window.location.hash.replace(/^#\/?/, '') || 'login';
 function Cargando({error}: {error?: string}) {
-    return <main className="loading-view" aria-busy={!error}><p role={error ? 'alert' : 'status'}>{error || 'Cargando CrediLocal…'}</p>
-      {error ? <button className="btn" onClick={() => window.location.reload()}>Reintentar</button> : <div className="skeleton-grid" aria-hidden="true"><i/><i/><i/><i/></div>}
+    // Sin texto visible mientras carga: solo el esqueleto. El anuncio para lectores de pantalla queda en aria-label.
+    return <main className="loading-view" aria-busy={!error}>
+      {error ? <p role="alert">{error}</p> : <div className="skeleton-grid" role="status" aria-label="Cargando CrediLocal"><i/><i/><i/><i/></div>}
+      {error ? <button className="btn" onClick={() => window.location.reload()}>Reintentar</button> : null}
     </main>;
 }
 function Enrutador() {
