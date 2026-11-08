@@ -62,7 +62,7 @@ export function crearLimitador() {
 }
 /** La cookie solo viaja por HTTPS cuando la conexión (o el proxy que la termina) lo es. */
 const atributosCookie = (req: IncomingMessage) =>
-    `HttpOnly; SameSite=Strict; Path=/${(req.socket as { encrypted?: boolean }).encrypted || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`;
+    `HttpOnly; SameSite=Strict; Path=/${(req.socket as { encrypted?: boolean } | null)?.encrypted || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`;
 export type Limitador = ReturnType<typeof crearLimitador>;
 export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), limitador: Limitador = crearLimitador()) {
     const cookie = (req: IncomingMessage) => /\bcredilocal=([a-f0-9]{64})\b/.exec(req.headers.cookie ?? '')?.[1];
