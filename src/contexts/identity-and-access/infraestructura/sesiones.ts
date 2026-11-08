@@ -88,7 +88,8 @@ export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), l
         // La última IP de x-forwarded-for es la que añade el proxy de Vercel; la primera la pone el cliente y se puede falsificar.
         const ipReal = (typeof req.headers['x-forwarded-for'] === 'string' ? req.headers['x-forwarded-for'].split(',').pop()!.trim() : '') || req.socket?.remoteAddress || 'desconocido';
         const origen = `origen:${ipReal}`;
-        const llave = `${ipReal}:${normalizarCorreo(correo)}:${rol}`;
+        // Por cuenta, sin importar la IP: rotar de origen no sirve para seguir probando claves contra la misma cuenta.
+        const llave = `${normalizarCorreo(correo)}:${rol}`;
         const espera = Math.max(limitador.segundosRestantes(llave, MAX_POR_CUENTA), limitador.segundosRestantes(origen, MAX_POR_ORIGEN));
         if (espera > 0) throw new ErrorDeAccesoLimitado(espera);
         const encontrada = f.cuentas.todas().find(a => a.rol === rol && a.correo === normalizarCorreo(correo));

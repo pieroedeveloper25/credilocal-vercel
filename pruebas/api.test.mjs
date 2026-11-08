@@ -392,3 +392,17 @@ test('el bloqueo por intentos fallidos se conserva entre instancias y se confirm
   await app.cerrar();
  }
 });
+
+test('el bloqueo es por cuenta: intentos desde otras IP también la bloquean', async () => {
+ const app = await entorno();
+ try {
+  const base = `http://127.0.0.1:${app.servidor.address().port}`;
+  const intentar = (ip, clave) => fetch(`${base}/api/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip }, body: JSON.stringify({ rol: 'Comercio', correo: 'comercio@sutaller.pe', clave }) }).then(async r => ({ codigo: r.status, datos: await r.json() }));
+  for (let i = 0; i < 10; i++) assert.equal((await intentar(`10.0.0.${i + 1}`, 'incorrecta1')).codigo, 400);
+  const bloqueado = await intentar('10.9.9.9', 'credi2026');
+  assert.equal(bloqueado.codigo, 400);
+  assert.match(JSON.stringify(bloqueado.datos), /Demasiados intentos/);
+ } finally {
+  await app.cerrar();
+ }
+});
