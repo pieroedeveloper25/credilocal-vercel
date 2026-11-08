@@ -57,7 +57,7 @@ export function Cronograma() {
       <Head title="Simulador de cuotas" sub="Explora fechas e importes con el método francés. Simular no registra una compra ni crea una deuda.">
         {res ? <Badge tone={res.c.cierra ? 'ok' : 'bad'}>{res.c.cierra ? 'Saldo final S/ 0.00' : 'No cierra'}</Badge> : <Badge tone="bad">Sin simulación</Badge>}
       </Head>
-      <p className="sub">Los campos contienen el ejemplo del Reto 4: capital 1,200, TEA 36 %, compra del 08/10/2026 y tres cuotas. Puedes cambiarlos y pulsar «Simular». Los resultados están expresados en soles (PEN).</p>
+      <p className="sub">Ingrese capital, TEA, cuotas y fecha de compra, y pulse «Simular». Los resultados están expresados en soles (PEN).</p>
 
       <div className="card grid rv" style={{ ...idx(1), gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', alignItems: 'end' }}>
         <Field id="cap" label="Capital (P)" help="capital"><input id="cap" className="in num" inputMode="decimal" value={f.cap} onChange={set('cap')} aria-describedby={tipId('cap')}/></Field>
