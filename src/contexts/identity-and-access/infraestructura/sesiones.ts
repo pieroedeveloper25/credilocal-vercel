@@ -85,8 +85,9 @@ export function crearSesiones(sesiones: AlmacenSesiones = sesionesEnMemoria(), l
     async function entrar(req: IncomingMessage, res: ServerResponse, f: FuenteDeAcceso, pedido: Record<string, unknown>) {
         const { correo, clave, rol } = pedido;
         exigir(typeof correo === 'string' && typeof clave === 'string' && typeof rol === 'string' && clave.length <= 64 && correo.length <= 100, 'Ingrese correo y contraseña válidos.');
-        const origen = `origen:${req.socket.remoteAddress}`;
-        const llave = `${req.socket.remoteAddress}:${normalizarCorreo(correo)}:${rol}`;
+        const ipReal = (typeof req.headers['x-forwarded-for'] === 'string' ? req.headers['x-forwarded-for'].split(',')[0].trim() : '') || req.socket?.remoteAddress || 'desconocido';
+        const origen = `origen:${ipReal}`;
+        const llave = `${ipReal}:${normalizarCorreo(correo)}:${rol}`;
         const espera = Math.max(limitador.segundosRestantes(llave, MAX_POR_CUENTA), limitador.segundosRestantes(origen, MAX_POR_ORIGEN));
         if (espera > 0) throw new ErrorDeAccesoLimitado(espera);
         const encontrada = f.cuentas.todas().find(a => a.rol === rol && a.correo === normalizarCorreo(correo));
