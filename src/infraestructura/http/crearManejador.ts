@@ -30,7 +30,6 @@ const respuesta = (codigo: number, valor: unknown) => ({ codigo, valor });
  * sus cambios se confirman; si lanza un error, no se escribe nada. Las respuestas se envían después de confirmar.
  */
 export function crearManejador(o: OpcionesManejador) {
-    const limitador = o.limitador ?? crearLimitador();
     return async function manejar(req: IncomingMessage, res: ServerResponse): Promise<void> {
         try {
             const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
@@ -67,7 +66,10 @@ export function crearManejador(o: OpcionesManejador) {
                     throw new ErrorHttp(415, 'Use Content-Type: application/json.');
             }
             const pedido = req.method === 'POST' ? await cuerpo(req) : {};
-            const { codigo, valor } = await o.unidad.ejecutar(async ({ datos: d, sesiones: almacen }) => {
+            // Un intento fallido debe quedar contado aunque la respuesta sea un error: ese error se lanza después de confirmar.
+            let diferido: unknown;
+            const { codigo, valor } = await o.unidad.ejecutar(async ({ datos: d, sesiones: almacen, intentos }) => {
+                const limitador = o.limitador ?? crearLimitador(intentos);
                 const sesiones = crearSesiones(almacen, limitador);
                 const repos = repositoriosSobre(d);
                 const acceso: FuenteDeAcceso = {
@@ -79,8 +81,15 @@ export function crearManejador(o: OpcionesManejador) {
                     },
                 };
                 if (url.pathname === '/api/login' && req.method === 'POST') {
-                    const { sesion: s } = await sesiones.entrar(req, res, acceso, pedido);
-                    return respuesta(200, { sesion: s, datos: datosVisibles(d, s) });
+                    try {
+                        const { sesion: s } = await sesiones.entrar(req, res, acceso, pedido);
+                        return respuesta(200, { sesion: s, datos: datosVisibles(d, s) });
+                    }
+                    catch (e) {
+                        if (!(e instanceof ErrorDeDominio)) throw e;
+                        diferido = e;
+                        return respuesta(0, null);
+                    }
                 }
                 if (url.pathname === '/api/logout' && req.method === 'POST') {
                     sesiones.salir(req, res);
@@ -112,9 +121,17 @@ export function crearManejador(o: OpcionesManejador) {
                     return respuesta(200, d.auditoria);
                 }
                 if (url.pathname === '/api/clave' && req.method === 'POST') {
-                    const cuentaId = await sesiones.cambiarClave(req, acceso, pedido);
-                    d.auditoria.push({ fecha: new Date().toISOString(), actor: s.correo, accion: 'CAMBIAR CLAVE', tiendaId: s.tiendaId, detalle: `cuenta=${cuentaId}` });
-                    return respuesta(200, { estado: 'ok' });
+                    try {
+                        const cuentaId = await sesiones.cambiarClave(req, acceso, pedido);
+                        d.auditoria.push({ fecha: new Date().toISOString(), actor: s.correo, accion: 'CAMBIAR CLAVE', tiendaId: s.tiendaId, detalle: `cuenta=${cuentaId}` });
+                        return respuesta(200, { estado: 'ok' });
+                    }
+                    catch (e) {
+                        // Igual que el login: el intento fallido se confirma y el error se muestra después.
+                        if (!(e instanceof ErrorDeDominio)) throw e;
+                        diferido = e;
+                        return respuesta(0, null);
+                    }
                 }
                 if (url.pathname === '/api/estado' && req.method === 'GET') {
                     return respuesta(200, datosVisibles(d, s));
@@ -125,6 +142,7 @@ export function crearManejador(o: OpcionesManejador) {
                 }
                 return respuesta(404, { error: 'Recurso no encontrado.' });
             });
+            if (diferido) throw diferido;
             enviar(res, codigo, valor);
         }
         catch (e) {

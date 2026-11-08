@@ -373,3 +373,22 @@ test('clave provisional: hasta cambiarla solo se permite cambiar la clave; despu
   assert.equal((await nuevo('estado')).codigo,200,'la sesión que cambió la clave sigue abierta');
  }finally{await app.cerrar();}
 });
+
+test('el bloqueo por intentos fallidos se conserva entre instancias y se confirma aunque la respuesta sea error', async () => {
+ const carpeta = mkdtempSync(resolve('pruebas', 'base-intentos-')), ruta = resolve(carpeta, 'intentos.sqlite');
+ let app = await entorno(ruta);
+ try {
+  const api = app.sesion();
+  for (let i = 0; i < 10; i++) assert.equal((await entrar(api, 'Cliente', 'bloqueo@example.com', 'ClaveErronea1')).codigo, 400);
+  const bloqueado = await entrar(api, 'Cliente', 'bloqueo@example.com', 'ClaveErronea1');
+  assert.equal(bloqueado.codigo, 400);
+  assert.match(bloqueado.datos.error, /Demasiados intentos/);
+  await app.cerrar();
+  app = await entorno(ruta);
+  const otraInstancia = await entrar(app.sesion(), 'Cliente', 'bloqueo@example.com', 'ClaveCorrecta1');
+  assert.equal(otraInstancia.codigo, 400);
+  assert.match(otraInstancia.datos.error, /Demasiados intentos/);
+ } finally {
+  await app.cerrar();
+ }
+});

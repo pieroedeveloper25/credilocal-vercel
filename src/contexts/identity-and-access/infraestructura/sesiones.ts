@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { Sesion } from '../dominio/modelos';
 import type { RepositorioCuentas } from '../dominio/repositorios';
 import { comprobacionFicticia, comprobarClave, conClave, exigirClaveValida, hashObsoleto } from './credenciales';
-import type { AlmacenSesiones } from '../../../shared/aplicacion/puertos';
+import type { AlmacenIntentos, AlmacenSesiones } from '../../../shared/aplicacion/puertos';
 import { ErrorDeDominio, ErrorDeSesion, exigir, normalizarCorreo } from '../../../shared/dominio/validaciones';
 export class ErrorDeAccesoLimitado extends ErrorDeDominio {
     constructor(public readonly segundosRestantes: number) {
@@ -30,34 +30,34 @@ export function sesionesEnMemoria(): AlmacenSesiones {
 const resumen = (token: string) => createHash('sha256').update(token).digest('hex');
 const DURACION_SESION = 8 * 3600000;
 /** Intentos fallidos: por cuenta y perfil desde un origen, y en total por origen. */
-const VENTANA = 600000, MAX_POR_CUENTA = 10, MAX_POR_ORIGEN = 40, MAX_CAMBIO_CLAVE = 5, MAX_REGISTROS = 5000;
-/** Contador de fallos acotado: descarta los vencidos y, si aun así hay demasiados, los más antiguos. */
-export function crearLimitador() {
-    const fallos = new Map<string, { n: number; hasta: number }>();
-    const depurar = () => {
-        const ahora = Date.now();
-        for (const [llave, f] of fallos)
-            if (f.hasta <= ahora)
-                fallos.delete(llave);
-        while (fallos.size > MAX_REGISTROS)
-            fallos.delete(fallos.keys().next().value as string);
+const VENTANA = 600000, MAX_POR_CUENTA = 10, MAX_POR_ORIGEN = 40, MAX_CAMBIO_CLAVE = 5;
+/** Intentos fallidos sin base de datos (pruebas y desarrollo): viven lo que dure el proceso. */
+export function intentosEnMemoria(): AlmacenIntentos {
+    const mapa = new Map<string, { n: number; hasta: number }>();
+    return {
+        obtener: l => mapa.get(l),
+        guardar: (l, i) => void mapa.set(l, i),
+        borrar: l => void mapa.delete(l),
+        limpiarVencidos: ahora => { for (const [l, i] of mapa) if (i.hasta < ahora) mapa.delete(l); },
     };
+}
+/** Contador de fallos. Su estado vive en el almacén de la solicitud: en producción, en la base de datos compartida. */
+export function crearLimitador(almacen: AlmacenIntentos = intentosEnMemoria()) {
     return {
         segundosRestantes: (llave: string, maximo: number) => {
-            const fallo = fallos.get(llave);
+            const fallo = almacen.obtener(llave);
             return fallo && fallo.n >= maximo ? Math.max(0, Math.ceil((fallo.hasta - Date.now()) / 1000)) : 0;
         },
         bloqueado: (llave: string, maximo: number) => {
-            const f = fallos.get(llave);
+            const f = almacen.obtener(llave);
             return !!f && f.hasta > Date.now() && f.n >= maximo;
         },
         anotar: (llave: string) => {
-            const f = fallos.get(llave);
-            fallos.delete(llave);
-            fallos.set(llave, { n: (f && f.hasta > Date.now() ? f.n : 0) + 1, hasta: Date.now() + VENTANA });
-            depurar();
+            const f = almacen.obtener(llave);
+            almacen.guardar(llave, { n: (f && f.hasta > Date.now() ? f.n : 0) + 1, hasta: Date.now() + VENTANA });
+            almacen.limpiarVencidos(Date.now());
         },
-        olvidar: (llave: string) => void fallos.delete(llave),
+        olvidar: (llave: string) => void almacen.borrar(llave),
     };
 }
 /** La cookie solo viaja por HTTPS cuando la conexión (o el proxy que la termina) lo es. */

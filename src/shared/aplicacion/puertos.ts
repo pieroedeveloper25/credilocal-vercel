@@ -31,7 +31,14 @@ export interface CreadorDeCuentas {
     crearCuenta(correo: string, clave: string, rol: Rol, id: number, tiendaId?: number, clienteId?: number): Promise<Cuenta>;
 }
 
-/** Lo que una solicitud ve: una fotografía coherente de los datos y las sesiones vigentes. */
-export interface ContextoSolicitud { datos: Datos; sesiones: AlmacenSesiones }
+/** Contadores de intentos fallidos de acceso. Se guardan en la base para que todas las instancias compartan el bloqueo. */
+export interface AlmacenIntentos {
+    obtener(llave: string): { n: number; hasta: number } | undefined;
+    guardar(llave: string, intento: { n: number; hasta: number }): void;
+    borrar(llave: string): void;
+    limpiarVencidos(ahora: number): void;
+}
+/** Lo que una solicitud ve: una fotografía coherente de los datos, las sesiones vigentes y los intentos fallidos. */
+export interface ContextoSolicitud { datos: Datos; sesiones: AlmacenSesiones; intentos: AlmacenIntentos }
 /** Ejecuta una solicitud como unidad atómica: confirma solo si termina sin error. */
 export interface UnidadDeSolicitud { ejecutar<T>(operacion: (contexto: ContextoSolicitud) => T | Promise<T>): Promise<T> }

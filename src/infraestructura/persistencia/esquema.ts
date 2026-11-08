@@ -88,6 +88,8 @@ export const TABLAS: Tabla[] = [
 export const METADATOS_DDL = 'CREATE TABLE IF NOT EXISTS metadatos (clave TEXT PRIMARY KEY, valor TEXT NOT NULL)';
 /** Tabla auxiliar de infraestructura: no es una entidad del modelo del informe. Guarda solo el resumen del token. */
 export const SESIONES_DDL = 'CREATE TABLE IF NOT EXISTS sesiones (token_hash TEXT PRIMARY KEY, cuenta_id INTEGER NOT NULL, vence BIGINT NOT NULL)';
+/** Tabla auxiliar de infraestructura: contadores de intentos fallidos de acceso, compartidos por todas las instancias. */
+export const INTENTOS_DDL = 'CREATE TABLE IF NOT EXISTS intentos (llave TEXT PRIMARY KEY, n INTEGER NOT NULL, hasta BIGINT NOT NULL)';
 
 function ddl(t: Tabla): string {
     const d = t.dependencia;
@@ -101,7 +103,7 @@ function ddl(t: Tabla): string {
 
 /** Sentencias DDL idempotentes, en el orden de creación. */
 export function sentenciasDeEsquema(): string[] {
-    return [METADATOS_DDL, ...TABLAS.map(ddl), SESIONES_DDL];
+    return [METADATOS_DDL, ...TABLAS.map(ddl), SESIONES_DDL, INTENTOS_DDL];
 }
 
 /** Lectura de una tabla completa, en el orden en que se reconstruye la entidad. */

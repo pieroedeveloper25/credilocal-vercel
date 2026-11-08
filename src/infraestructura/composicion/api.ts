@@ -2,7 +2,6 @@ import { abrirBaseDatos, type PoolSql } from '../persistencia/postgres';
 import { casosSobre } from '../persistencia/casosSobreDatos';
 import { crearManejador } from '../http/crearManejador';
 import { crearCuenta } from '../../contexts/identity-and-access/infraestructura/credenciales';
-import { crearLimitador } from '../../contexts/identity-and-access/infraestructura/sesiones';
 import { relojPeru } from '../../shared/dominio/fechas';
 import type { Datos } from '../../shared/dominio/datos';
 import type { ContextoSolicitud, UnidadDeSolicitud } from '../../shared/aplicacion/puertos';
@@ -22,7 +21,7 @@ export async function crearApi(o: OpcionesApi) {
         }),
     };
     return {
-        manejar: crearManejador({ unidad, cuentas, ahora, limitador: crearLimitador(), claveCron: o.claveCron }),
+        manejar: crearManejador({ unidad, cuentas, ahora, claveCron: o.claveCron }),
         unidad,
         /** Emite los cortes pendientes y devuelve cuántos se emitieron. */
         revisarCortes: () => base.ejecutar((contexto: ContextoSolicitud) => casosSobre(contexto.datos, cuentas).emitirCortesPendientes(ahora())),

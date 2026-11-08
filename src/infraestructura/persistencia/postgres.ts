@@ -5,7 +5,7 @@
  * Si la lógica lanza un error, la transacción se revierte completa.
  */
 import type { Datos } from '../../shared/dominio/datos';
-import type { AlmacenSesiones, UnidadDeSolicitud } from '../../shared/aplicacion/puertos';
+import type { AlmacenIntentos, AlmacenSesiones, UnidadDeSolicitud } from '../../shared/aplicacion/puertos';
 import { TABLAS, sentenciasDeEsquema, sqlLectura, estadoDesde, armarDatos, planificar, type Crudos, type Operacion } from './esquema';
 
 export interface ClienteSql { query(sql: string, params?: unknown[]): Promise<{ rows: any[] }>; release(): void }
@@ -53,6 +53,28 @@ function almacenDeSesiones(filas: { token_hash: string; cuenta_id: number; vence
     return { almacen, pendientes };
 }
 
+/** Intentos fallidos de acceso: mismo patrón que las sesiones, con espejo en memoria y cambios confirmados en la transacción. */
+function almacenDeIntentos(filas: { llave: string; n: number; hasta: number }[]) {
+    const mapa = new Map(filas.map(f => [f.llave, { n: Number(f.n), hasta: Number(f.hasta) }] as const));
+    const pendientes: Operacion[] = [];
+    const almacen: AlmacenIntentos = {
+        obtener: l => mapa.get(l),
+        guardar: (l, i) => {
+            mapa.set(l, i);
+            pendientes.push({ tabla: 'intentos', sql: 'INSERT INTO intentos(llave,n,hasta) VALUES (?,?,?) ON CONFLICT (llave) DO UPDATE SET n=EXCLUDED.n, hasta=EXCLUDED.hasta', params: [l, i.n, i.hasta] });
+        },
+        borrar: l => {
+            mapa.delete(l);
+            pendientes.push({ tabla: 'intentos', sql: 'DELETE FROM intentos WHERE llave=?', params: [l] });
+        },
+        limpiarVencidos: ahora => {
+            for (const [l, i] of mapa) if (i.hasta < ahora) mapa.delete(l);
+            pendientes.push({ tabla: 'intentos', sql: 'DELETE FROM intentos WHERE hasta<?', params: [ahora] });
+        },
+    };
+    return { almacen, pendientes };
+}
+
 /** Crea el esquema si falta y, la primera vez, siembra los datos iniciales. El bloqueo de asesor evita carreras en arranques simultáneos. */
 export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos>): Promise<UnidadDeSolicitud & { cerrar(): Promise<void> }> {
     const init = await pool.connect();
@@ -83,8 +105,10 @@ export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos
                 datos.finanzasVersion = Number((await metadato(c, 'finanzasVersion')) ?? 1);
                 const filas = (await c.query('SELECT token_hash, cuenta_id, vence FROM sesiones WHERE vence >= $1', [Date.now()])).rows;
                 const { almacen, pendientes } = almacenDeSesiones(filas);
-                const resultado = await operacion({ datos, sesiones: almacen });
-                const todas = [...planificar(datos, previo).operaciones, ...pendientes];
+                const filasIntentos = (await c.query('SELECT llave, n, hasta FROM intentos WHERE hasta >= $1', [Date.now()])).rows;
+                const { almacen: intentos, pendientes: pendientesIntentos } = almacenDeIntentos(filasIntentos);
+                const resultado = await operacion({ datos, sesiones: almacen, intentos });
+                const todas = [...planificar(datos, previo).operaciones, ...pendientes, ...pendientesIntentos];
                 for (const op of todas) await c.query(marcadores(op.sql), op.params);
                 if (todas.length) await c.query(subirVersion);
                 await escribirMetadato(c, 'finanzasVersion', String(datos.finanzasVersion ?? 1));
