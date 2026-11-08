@@ -16,3 +16,4 @@ pruebas/base-prueba-*/
 # Artefactos locales de Vite y pruebas
 vite.config.ts.timestamp-*.mjs
 pruebas/base-prueba*/
+vercel-dist/
