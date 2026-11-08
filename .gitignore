@@ -12,3 +12,7 @@ pruebas/base-prueba-*/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+# Artefactos locales de Vite y pruebas
+vite.config.ts.timestamp-*.mjs
+pruebas/base-prueba*/
