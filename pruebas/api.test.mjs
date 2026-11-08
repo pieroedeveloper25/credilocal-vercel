@@ -326,8 +326,10 @@ test('regresión retos: mora, parciales, compra tras corte, límite y horario', 
   precioActual = 900;
   const cuotas = await vender('2026-10-18', '1', 'Cuotas');
   assert.equal(cuotas.codigo, 200);
+  // Compra del 18/10 después del corte (día 10): gracia de 38 días hasta el 25/11, alternativa B de QA-ALG-01.
+  // Verificado con cálculo independiente: 900 capitalizado 38 días y cuota francesa a TEM de TEA 36 %.
   assert.deepEqual(cuotas.datos.datos.obligaciones.filter(o => o.ventaId === cuotas.datos.resultado.id)
-    .map(o => (Number(o.capital) + Number(o.comp)).toFixed(2)), ['315.71', '315.71', '315.70']);
+    .map(o => (Number(o.capital) + Number(o.comp)).toFixed(2)), ['326.12', '326.12', '326.12']);
 
   await op(api, 'GUARDAR PRODUCTO', {registro: {...producto, contado: '50', credito: '100'}});
   precioActual = 100;
