@@ -42,7 +42,11 @@ export function crearManejador(o: OpcionesManejador) {
                     enviar(res, 401, { error: 'No autorizado.' });
                     return;
                 }
-                await o.unidad.ejecutar(() => undefined);
+                // La unidad emite los cortes vencidos al empezar. Además deja constancia de la ejecución: en el plan Hobby los logs
+                // duran una hora y no hay otra forma de saber después si el cron corrió.
+                await o.unidad.ejecutar(({ datos: d }) => {
+                    d.auditoria.push({ fecha: new Date().toISOString(), actor: 'Sistema', accion: 'CRON CORTES', detalle: 'ejecución diaria' });
+                });
                 enviar(res, 200, { estado: 'ok' });
                 return;
             }
