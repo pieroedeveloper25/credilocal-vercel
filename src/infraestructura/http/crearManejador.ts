@@ -17,6 +17,8 @@ export interface OpcionesManejador {
     limitador?: Limitador;
     /** Secreto de /api/cron/cortes. Sin valor, la ruta no existe. */
     claveCron?: string;
+    /** Comprobación de la base de datos para /api/salud; debe lanzar si no responde. */
+    salud?: () => Promise<void>;
 }
 
 const claveCronValida = (encabezado: string | undefined, secreto: string) => {
@@ -34,6 +36,15 @@ export function crearManejador(o: OpcionesManejador) {
         try {
             const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
             if (url.pathname === '/api/salud' && req.method === 'GET') {
+                try {
+                    await o.salud?.();
+                }
+                catch (e) {
+                    // Sin detalles hacia fuera: solo el registro interno conserva la causa.
+                    console.error('Salud: la base de datos no responde:', e);
+                    enviar(res, 503, { estado: 'error' });
+                    return;
+                }
                 enviar(res, 200, { estado: 'ok', almacenamiento: 'PostgreSQL' });
                 return;
             }

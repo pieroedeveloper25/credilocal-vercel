@@ -62,3 +62,35 @@ describe('manejador HTTP: cron de cortes', () => {
     }
   });
 });
+
+describe('manejador HTTP: salud', () => {
+  afterEach(() => vi.restoreAllMocks());
+  const consultar = async (salud: () => Promise<void>) => {
+    const unidad = { ejecutar: async () => { throw new Error('no se usa'); } };
+    const manejar = crearManejador({ unidad, cuentas: { crearCuenta: async () => { throw new Error('no se usa'); } }, ahora: () => '2026-11-09T00:00', salud });
+    const servidor = createServer(manejar);
+    await new Promise<void>(r => servidor.listen(0, '127.0.0.1', r));
+    try {
+      const r = await fetch(`http://127.0.0.1:${(servidor.address() as AddressInfo).port}/api/salud`);
+      return { estado: r.status, texto: await r.text() };
+    }
+    finally {
+      await new Promise<void>(r => servidor.close(() => r()));
+    }
+  };
+
+  it('responde 200 cuando la base responde', async () => {
+    const r = await consultar(async () => undefined);
+    expect(r.estado).toBe(200);
+    expect(JSON.parse(r.texto)).toEqual({ estado: 'ok', almacenamiento: 'PostgreSQL' });
+  });
+
+  it('responde 503 sin detalles cuando la base falla', async () => {
+    const registro = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const r = await consultar(async () => { throw new Error('connect ECONNREFUSED 10.0.0.5:5432 password=secreto'); });
+    expect(r.estado).toBe(503);
+    expect(JSON.parse(r.texto)).toEqual({ estado: 'error' });
+    expect(r.texto).not.toMatch(/ECONNREFUSED|secreto|10\.0/);
+    expect(registro).toHaveBeenCalled();
+  });
+});

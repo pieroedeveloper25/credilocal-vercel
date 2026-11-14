@@ -2,10 +2,10 @@ import './mi-cronograma.css';
 import { Fragment, useMemo, useState } from 'react';
 import { useSesion } from '../session';
 import { useStore } from '../store';
-import { num, sol as dinero } from '../format';
+import { num, pct7, sol as dinero } from '../format';
 import { Badge, Field, Head, Money, idx } from '../components/ui';
 import { ChevronDownIcon } from '../components/Icons';
-import { convertirTasas, generarCronogramaFrances } from '../../../contexts/credit-origination/dominio/motor';
+import { convertirTasas, generarCronogramaFrances, tceaCuotas } from '../../../contexts/credit-origination/dominio/motor';
 import { D } from '../../../shared/dominio/decimal';
 import { fmtFecha, parseFecha } from '../../../shared/dominio/fechas';
 /** Vista del cliente: el cronograma de su propio financiamiento en cuotas, si tiene uno. Solo lectura. */
@@ -50,6 +50,7 @@ function CronogramaCliente({ cl }: { cl: ReturnType<typeof useStore>['clientes']
           <div className="stat"><div className="t">Días de gracia</div><div className="v">{cro.diasGracia}</div></div>
           <div className="stat hl"><div className="t">Cuota mensual de referencia</div><div className="v"><Money divisa={moneda} value={cro.cuotaFija}/></div></div>
           <div className="stat"><div className="t">Total de intereses</div><div className="v"><Money divisa={moneda} value={cro.totalIntereses}/></div></div>
+          <div className="stat"><div className="t">Tasa de costo efectivo anual (TCEA)</div><div className="v num" style={{ fontSize: 18 }}>{pct7(tceaCuotas(D(venta.capital), cro))}</div></div>
         </div>
 
         <section className="cronograma-movil" aria-label="Cronograma de la compra">

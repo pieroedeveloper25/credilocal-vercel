@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react';
 import { leer, num, pct7, sol } from '../format';
 import { Badge, Field, Head, Money, Tick, idx, tipId } from '../components/ui';
 import { ChevronDownIcon } from '../components/Icons';
-import { convertirTasas, generarCronogramaFrances } from '../../../contexts/credit-origination/dominio/motor';
+import { convertirTasas, generarCronogramaFrances, tceaCuotas } from '../../../contexts/credit-origination/dominio/motor';
 import { fechaValida, fmtFecha, parseFecha } from '../../../shared/dominio/fechas';
 import { horaValida } from '../../../shared/dominio/validaciones';
 const INICIAL = { cap: '1200', tea: '36', n: '3', fc: '2026-10-08', dc: '10', dp: '25', hora: '12:00', horaCorte: '23:59' };
@@ -20,8 +20,8 @@ function validar(f: F): string {
         return 'Ingrese horas válidas.';
     if (!fechaValida(f.fc))
         return 'Ingrese una fecha de compra válida.';
-    if (!(dc >= 1 && dp <= 30 && dp > dc))
-        return 'La fecha de pago debe ser mayor que la de corte, entre 1 y 30.';
+    if (!(dc >= 1 && dp <= 31 && dp > dc))
+        return 'La fecha de pago debe ser mayor que la de corte, entre 1 y 31.';
     return '';
 }
 export function Cronograma() {
@@ -76,6 +76,7 @@ export function Cronograma() {
 
       {res && (<>
         <div className="rv" style={{ ...idx(2), display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div className="stat"><div className="t">Tasa de costo efectivo anual (TCEA)</div><div className="v num" style={{ fontSize: 18 }}><Tick value={pct7(tceaCuotas(leer(snap.cap)!, res.c))}/></div></div>
           <div className="stat"><div className="t">Tasa efectiva mensual (TEM)</div><div className="v num" style={{ fontSize: 18 }}><Tick value={pct7(res.t.tem)}/></div></div>
           <div className="stat"><div className="t">Días de gracia total</div><div className="v"><Tick value={String(res.c.diasGracia)}/></div></div>
           <div className="stat"><div className="t">Saldo al terminar la gracia</div><div className="v"><Money value={res.c.capitalAjustado}/></div></div>

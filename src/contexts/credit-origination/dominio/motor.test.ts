@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { imputarPorPrelacion } from '../../billing-and-collections/dominio/prelacion';
-import { convertirTasas, generarCronogramaFrances, liquidarFinDeMes, resolverCiclo } from './motor';
+import { convertirTasas, generarCronogramaFrances, liquidarFinDeMes, resolverCiclo, tceaCuotas, tceaFinDeMes } from './motor';
 import { compraPermitida, lineaDisponible } from '../../customer-management/dominio/lineaCredito';
 import { CLIENTES } from '../../../../pruebas/fixtures/demostracion/datos';
 import { D } from '../../../shared/dominio/decimal';
@@ -119,4 +119,30 @@ it('compra 25/09 tras el corte: gracia hasta el pago del ciclo que factura (26/1
   expect(isoFecha(c.filas[1].fecha)).toBe('2026-11-26');
   expect(isoFecha(c.filas[3].fecha)).toBe('2027-01-26');
   expect(c.cierra).toBe(true);
+});
+
+describe('TCEA', () => {
+  it('fin de mes, juego 1: 27.1048 % anual', () => {
+    const t = convertirTasas('Nominal', 24, 'Diaria'), m = convertirTasas('Nominal', 15, 'Diaria');
+    const r = liquidarFinDeMes({ capital: D(1200), fechaCompra: f('2026-09-10'), diaCorte: 20, diaPago: 26, tedComp: t.ted, tedMora: m.ted, fechaRealPago: f('2026-09-30') });
+    expect(tceaFinDeMes(D(1200), r.montoVencido, r.dias).mul(100).toFixed(4)).toBe('27.1048');
+  });
+  it('cuotas, juego 2: 30.0010 % anual', () => {
+    const t = convertirTasas('Efectiva', 30);
+    const c = generarCronogramaFrances({ capital: D(4500), fechaCompra: f('2026-09-15'), diaCorte: 20, diaPago: 26, ted: t.ted, tem: t.tem, nMeses: 3 });
+    expect(tceaCuotas(D(4500), c).mul(100).toFixed(4)).toBe('30.0010');
+  });
+  it('con tasa 0 % el costo es 0', () => {
+    const c = generarCronogramaFrances({ capital: D(900), fechaCompra: f('2026-09-15'), diaCorte: 20, diaPago: 26, ted: D(0), tem: D(0), nMeses: 3 });
+    expect(tceaCuotas(D(900), c).toFixed(7)).toBe('0.0000000');
+    expect(tceaFinDeMes(D(900), D(900), 16).toFixed(7)).toBe('0.0000000');
+  });
+});
+
+describe('día de pago 31', () => {
+  it('los vencimientos se ajustan al último día de cada mes', () => {
+    const t = convertirTasas('Efectiva', 30);
+    const c = generarCronogramaFrances({ capital: D(1000), fechaCompra: f('2026-01-10'), diaCorte: 20, diaPago: 31, ted: t.ted, tem: t.tem, nMeses: 3 });
+    expect(c.filas.map(x => isoFecha(x.fecha))).toEqual(['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30']);
+  });
 });

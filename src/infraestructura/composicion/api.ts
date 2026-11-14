@@ -20,8 +20,12 @@ export async function crearApi(o: OpcionesApi) {
             return operacion(contexto);
         }),
     };
+    const salud = async () => {
+        const c = await o.pool.connect();
+        try { await c.query('SELECT 1'); } finally { c.release(); }
+    };
     return {
-        manejar: crearManejador({ unidad, cuentas, ahora, claveCron: o.claveCron }),
+        manejar: crearManejador({ unidad, cuentas, ahora, claveCron: o.claveCron, salud }),
         unidad,
         /** Emite los cortes pendientes y devuelve cuántos se emitieron. */
         revisarCortes: () => base.ejecutar((contexto: ContextoSolicitud) => casosSobre(contexto.datos, cuentas).emitirCortesPendientes(ahora())),

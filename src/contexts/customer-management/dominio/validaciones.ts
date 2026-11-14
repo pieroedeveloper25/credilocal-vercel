@@ -14,7 +14,7 @@ export function validarCliente(c: Cliente, otros: Cliente[]) {
     exigir(!otros.some(x => x.id !== c.id && x.doc === c.doc), 'El documento ya está registrado en esta tienda.');
     exigir(!c.correo || correoValido(c.correo), 'Ingrese un correo válido.');
     exigir(horaValida(c.horaCorte ?? ''), 'Ingrese una hora de corte válida.');
-    exigir(Number.isInteger(c.diaCorte) && Number.isInteger(c.diaPago) && c.diaCorte >= 1 && c.diaCorte <= 30 && c.diaPago > c.diaCorte && c.diaPago <= 30, 'El pago debe ser posterior al corte, entre los días 1 y 30.');
+    exigir(Number.isInteger(c.diaCorte) && Number.isInteger(c.diaPago) && c.diaCorte >= 1 && c.diaCorte <= 30 && c.diaPago > c.diaCorte && c.diaPago <= 31, 'El pago debe ser posterior al corte, entre los días 1 y 31.');
     exigir(Number.isInteger(c.plazo) && c.plazo >= 1 && c.plazo <= 12, 'El plazo debe estar entre 1 y 12 meses.');
     exigir(/^(PEN|USD)$/.test(c.moneda), 'Seleccione una moneda.');
     exigir(['Nominal', 'Efectiva'].includes(c.tipoC) && ['Nominal', 'Efectiva'].includes(c.tipoM), 'Seleccione tasas nominales o efectivas.');

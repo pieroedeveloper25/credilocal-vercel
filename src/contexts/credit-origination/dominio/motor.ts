@@ -111,3 +111,23 @@ export function generarCronogramaFrances(a: {
   }
   return { diasGracia, capitalAjustado, interesGracia, cuotaFija, filas, totalIntereses, totalCuotas, totalAmortizado, cierra: si.isZero() };
 }
+
+/* ---------- Tasa de costo efectivo anual (TCEA) ---------- */
+/** TCEA como fracción (0.27 = 27 %). Tasa anual de 360 días que iguala lo que se paga con el capital financiado. */
+export function tceaFinDeMes(capital: Decimal, montoVencido: Decimal, dias: number): Decimal {
+  if (capital.lte(0) || dias <= 0 || montoVencido.lte(capital)) return CERO;
+  return montoVencido.div(capital).pow(D(360).div(dias)).minus(1);
+}
+
+/** TCEA de un cronograma: las cuotas k se pagan a los `diasGracia + 30·k` días; se busca por bisección la tasa diaria que las trae a valor presente = capital. */
+export function tceaCuotas(capital: Decimal, c: Pick<Cronograma, 'diasGracia' | 'filas'>): Decimal {
+  const pagos = c.filas.filter(x => x.k > 0).map(x => ({ t: c.diasGracia + 30 * x.k, cuota: x.cuota }));
+  if (capital.lte(0) || pagos.length === 0 || pagos.reduce((s, p) => s.plus(p.cuota), CERO).lte(capital)) return CERO;
+  const valorPresente = (ted: Decimal) => pagos.reduce((s, p) => s.plus(p.cuota.div(ted.plus(1).pow(p.t))), CERO);
+  let bajo = CERO, alto = D('0.05');
+  for (let i = 0; i < 100; i++) {
+    const medio = bajo.plus(alto).div(2);
+    if (valorPresente(medio).gt(capital)) bajo = medio; else alto = medio;
+  }
+  return bajo.plus(alto).div(2).plus(1).pow(360).minus(1);
+}
