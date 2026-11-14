@@ -180,7 +180,7 @@ export function Venta() {
               <div className="kv"><span>Días de compra a vencimiento</span><Tick value={String(sim.r.dias)}/></div>
               <div className="kv"><span>Tasa efectiva diaria (TED)</span><Tick value={pct7(sim.t.ted)}/></div>
               <div className="kv"><span>Interés compensatorio</span><Tick value={num(sim.r.interesComp)}/></div>
-              <div className="kv"><span>Tasa de costo efectivo anual (TCEA)</span><Tick value={pct7(tceaFinDeMes(P, sim.r.montoVencido, sim.r.dias))}/></div>
+              <div className="kv"><span>Tasa de costo efectivo anual (TCEA)</span><span style={{ whiteSpace: 'nowrap' }}><Tick value={pct7(tceaFinDeMes(P, sim.r.montoVencido, sim.r.dias))}/></span></div>
               <div className="kv" style={{ fontWeight: 600, fontSize: 16 }}><span style={{ color: 'var(--ink)' }}>Total exigible</span><Tick value={sol(sim.r.montoVencido)}/></div>
             </>)}
             {sim?.tipo === 'cuotas' && (<>
@@ -191,7 +191,7 @@ export function Venta() {
               <div className="kv"><span>Primera cuota vence</span><Tick value={fmtFecha(sim.c.filas[1].fecha)}/></div>
               <div className="kv"><span>Cuota mensual (R)</span><b style={{ fontSize: 18 }}><Tick value={sol(sim.c.cuotaFija)}/></b></div>
               <div className="kv"><span>Total de intereses</span><Tick value={sol(sim.c.totalIntereses)}/></div>
-              <div className="kv"><span>Tasa de costo efectivo anual (TCEA)</span><Tick value={pct7(tceaCuotas(P, sim.c))}/></div>
+              <div className="kv"><span>Tasa de costo efectivo anual (TCEA)</span><span style={{ whiteSpace: 'nowrap' }}><Tick value={pct7(tceaCuotas(P, sim.c))}/></span></div>
               <div className="kv" style={{ fontWeight: 600 }}><span style={{ color: 'var(--ink)' }}>Total a pagar</span><Tick value={sol(sim.c.totalCuotas)}/></div>
               <details style={{ marginTop: 8 }}>
                 <summary style={{ color: 'var(--accent-ink)', cursor: 'pointer' }}>Cronograma de esta venta · método francés</summary>
