@@ -11,6 +11,8 @@ const politica = ["default-src 'self'", `script-src 'self' ${hashes.join(' ')}`.
 
 const configuracion = {
     $schema: 'https://openapi.vercel.sh/vercel.json',
+    // São Paulo: la misma región que la base de Neon. Cada solicitud hace varias consultas seguidas a la base.
+    regions: ['gru1'],
     headers: [{
         source: '/(.*)',
         headers: [
