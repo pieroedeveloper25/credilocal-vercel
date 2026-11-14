@@ -1,6 +1,6 @@
 import type { CasosDeUso } from './casosDeUso';
 import type { Venta } from '../contexts/credit-origination/dominio/modelos';
-import type { Cliente } from '../contexts/customer-management/dominio/modelos';
+import type { Cliente, TopeTasa } from '../contexts/customer-management/dominio/modelos';
 import type { Sesion, Tienda } from '../contexts/identity-and-access/dominio/modelos';
 import type { Producto } from '../contexts/product-catalog/dominio/modelos';
 import { exigir } from '../shared/dominio/validaciones';
@@ -9,6 +9,11 @@ export type Operacion = {
     pedido: {
         registro: Tienda;
         clave?: string;
+    };
+} | {
+    accion: 'GUARDAR TOPES';
+    pedido: {
+        registro: TopeTasa;
     };
 } | {
     accion: 'GUARDAR CLIENTE';
@@ -39,6 +44,10 @@ export async function ejecutarOperacion(casos: CasosDeUso, sesion: Sesion, opera
     if (operacion.accion === 'GUARDAR TIENDA') {
         exigir(sesion.rol === 'Superadministrador', 'Solo el administrador del sistema gestiona tiendas.');
         return casos.guardarTienda(operacion.pedido.registro, operacion.pedido.clave);
+    }
+    if (operacion.accion === 'GUARDAR TOPES') {
+        exigir(sesion.rol === 'Superadministrador', 'Solo el administrador del sistema gestiona los topes de tasas.');
+        return casos.guardarTopes(operacion.pedido.registro);
     }
     // Una acción desconocida no debe adquirir permisos por entrar en este despachador.
     const accionesComercio = ['GUARDAR CLIENTE', 'GUARDAR PRODUCTO', 'REGISTRAR VENTA', 'REGISTRAR PAGO', 'EMITIR CORTE'];

@@ -6,6 +6,7 @@
  */
 import type { Datos } from '../../shared/dominio/datos';
 import type { AlmacenIntentos, AlmacenSesiones, UnidadDeSolicitud } from '../../shared/aplicacion/puertos';
+import { TOPES_INICIALES } from '../../contexts/customer-management/dominio/topes';
 import { TABLAS, sentenciasDeEsquema, sqlLectura, estadoDesde, armarDatos, planificar, type Crudos, type Operacion } from './esquema';
 
 export interface ClienteSql { query(sql: string, params?: unknown[]): Promise<{ rows: any[] }>; release(): void }
@@ -90,6 +91,9 @@ export async function abrirBaseDatos(pool: PoolSql, semilla: () => Promise<Datos
             await escribirMetadato(init, 'finanzasVersion', String(datos.finanzasVersion ?? 1));
             await init.query(subirVersion);
         }
+        // Los topes de tasas se crean con valores iniciales también en bases ya inicializadas; si ya existen, no se tocan.
+        for (const [posicion, t] of TOPES_INICIALES.entries())
+            await init.query('INSERT INTO topes(posicion,id,moneda,compensatorio_max,moratorio_max,vigente_desde) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING', [posicion, t.id, t.moneda, t.compensatorioMax, t.moratorioMax, t.vigenteDesde]);
         await init.query('COMMIT');
     } catch (e) { await init.query('ROLLBACK').catch(() => undefined); throw e; } finally { init.release(); }
 

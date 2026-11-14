@@ -17,6 +17,10 @@ export function detalleAuditoria(operacion: Operacion, resultado: unknown, hoy?:
             const t = operacion.pedido.registro;
             return `tienda=${t.id < 0 ? 'nueva' : t.id}; ruc=${t.ruc}; activa=${t.activa}`;
         }
+        case 'GUARDAR TOPES': {
+            const t = operacion.pedido.registro;
+            return `moneda=${t.moneda}; compensatorio=${t.compensatorioMax}; moratorio=${t.moratorioMax}; vigente=${t.vigenteDesde}`;
+        }
         case 'GUARDAR CLIENTE': {
             const c = operacion.pedido.registro;
             return `cliente=${c.id < 0 ? 'nuevo' : c.id}; doc=${c.doc}; activo=${c.activo !== false}; limite=${c.limite}; moneda=${c.moneda}`;

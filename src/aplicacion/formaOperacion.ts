@@ -56,6 +56,7 @@ const CLIENTE: Esquema = {
     moneda: 'texto', tipoC: 'texto', valC: 'texto', capC: 'texto', tipoM: 'texto', valM: 'texto', capM: 'texto',
     tiendaId: 'entero?', activo: 'booleano?', direccion: 'texto?', telefono: 'texto?', correo: 'texto?', horaCorte: 'texto?', saldoComprometido: 'texto?',
 };
+const TOPE: Esquema = { id: 'entero', moneda: 'texto', compensatorioMax: 'texto', moratorioMax: 'texto', vigenteDesde: 'texto' };
 const PRODUCTO: Esquema = {
     sku: 'texto', nombre: 'texto', unidad: 'texto', marca: 'texto', contado: 'texto', credito: 'texto', modalidad: 'texto',
     tiendaId: 'entero?', activo: 'booleano?', imagen: 'texto?', proveedor: 'texto?', descripcion: 'texto?',
@@ -78,6 +79,8 @@ export function operacionDe(cuerpo: Record<string, unknown>): Operacion {
     switch (cuerpo.accion) {
         case 'GUARDAR TIENDA':
             return { accion: cuerpo.accion, pedido: tomar(p, { registro: TIENDA, clave: 'texto?' }, 'pedido') };
+        case 'GUARDAR TOPES':
+            return { accion: cuerpo.accion, pedido: tomar(p, { registro: TOPE }, 'pedido') };
         case 'GUARDAR CLIENTE':
             return { accion: cuerpo.accion, pedido: tomar(p, { registro: CLIENTE, clave: 'texto?' }, 'pedido') };
         case 'GUARDAR PRODUCTO':

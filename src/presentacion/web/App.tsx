@@ -14,6 +14,7 @@ import { Cronograma } from './screens/Cronograma';
 import { MiEstado } from './screens/MiEstado';
 import { MiCronograma } from './screens/MiCronograma';
 import { Tiendas } from './screens/Tiendas';
+import { Topes } from './screens/Topes';
 import { Auditoria } from './screens/Auditoria';
 import { useStore } from './store';
 /** Rutas del comercio: dashboard gerencial, clientes, catálogo, ventas y cobros. */
@@ -47,11 +48,11 @@ function Enrutador() {
     if (!sesion)
         return <Login />;
     if (sesion.rol === 'Superadministrador') {
-        if (ruta !== 'tiendas' && ruta !== 'auditoria') {
+        if (ruta !== 'tiendas' && ruta !== 'auditoria' && ruta !== 'topes') {
             window.location.hash = '#/tiendas';
             return null;
         }
-        return <Shell ruta={ruta}>{ruta === 'auditoria' ? <Auditoria /> : <Tiendas />}</Shell>;
+        return <Shell ruta={ruta}>{ruta === 'auditoria' ? <Auditoria /> : ruta === 'topes' ? <Topes /> : <Tiendas />}</Shell>;
     }
     // Cada rol solo puede entrar a sus propias pantallas; un enlace a la ruta del otro rol redirige a su inicio.
     if (sesion.rol === 'Cliente') {

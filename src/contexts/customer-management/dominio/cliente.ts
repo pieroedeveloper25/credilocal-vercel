@@ -1,4 +1,4 @@
-import type { Cliente } from './modelos';
+import type { Cliente, TopeTasa } from './modelos';
 import { saldoComprometidoDe } from './lineaCredito';
 import { validarCliente } from './validaciones';
 import { D } from '../../../shared/dominio/decimal';
@@ -8,6 +8,7 @@ import { exigir, normalizarCorreo } from '../../../shared/dominio/validaciones';
 export interface ContextoDeModificacion {
     otrosDeLaTienda: Cliente[];
     huboComprasEnElMes: () => boolean;
+    topes?: TopeTasa[];
 }
 
 /**
@@ -23,9 +24,9 @@ export class ClienteAgregado {
     }
 
     /** Alta de un cliente: nace sin capital comprometido y con el correo normalizado. */
-    static registrar(id: number, tiendaId: number, datos: Cliente, otrosDeLaTienda: Cliente[]) {
+    static registrar(id: number, tiendaId: number, datos: Cliente, otrosDeLaTienda: Cliente[], topes: TopeTasa[] = []) {
         const nuevo: Cliente = { ...datos, id, tiendaId, saldoComprometido: '0.00', correo: normalizarCorreo(datos.correo ?? '') };
-        validarCliente(nuevo, otrosDeLaTienda);
+        validarCliente(nuevo, otrosDeLaTienda, topes);
         return new ClienteAgregado(nuevo);
     }
 
@@ -45,7 +46,7 @@ export class ClienteAgregado {
         exigir(!cambiaMoneda || D(this.saldoComprometido).isZero(), 'No cambie la moneda mientras existan obligaciones pendientes.');
         exigir(!cambiaMoneda || !contexto.huboComprasEnElMes(), 'Cambie la moneda a partir de un mes sin operaciones previas para no mezclar monedas en el corte.');
         const nuevo: Cliente = { ...datos, id: this.estado.id, tiendaId: this.estado.tiendaId, saldoComprometido: this.estado.saldoComprometido ?? '0.00', correo: normalizarCorreo(datos.correo ?? '') };
-        validarCliente(nuevo, contexto.otrosDeLaTienda);
+        validarCliente(nuevo, contexto.otrosDeLaTienda, contexto.topes);
         return new ClienteAgregado(nuevo);
     }
 

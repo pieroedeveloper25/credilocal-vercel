@@ -4,7 +4,7 @@ import { CambiarClave } from './CambiarClave';
 import { ThemeToggle } from './ThemeToggle';
 import { useSesion } from '../session';
 import { useStore } from '../store';
-import { CalendarIcon, CartIcon, CatalogIcon, CreditCardIcon, DashboardIcon, FileTextIcon, LogOutIcon, UsersIcon } from './Icons';
+import { CalendarIcon, CartIcon, CatalogIcon, CreditCardIcon, DashboardIcon, FileTextIcon, LogOutIcon, SlidersIcon, UsersIcon } from './Icons';
 interface NavItem { ruta: string; titulo: string; icon: ComponentType<{ size?: number }> }
 const COMERCIO: NavItem[] = [
     { ruta: 'dashboard', titulo: 'Dashboard', icon: DashboardIcon }, { ruta: 'clientes', titulo: 'Clientes', icon: UsersIcon },
@@ -13,7 +13,7 @@ const COMERCIO: NavItem[] = [
     { ruta: 'cronograma', titulo: 'Simulador de cuotas', icon: CalendarIcon },
 ];
 const CLIENTE: NavItem[] = [{ ruta: 'mi-estado', titulo: 'Mi estado de cuenta', icon: FileTextIcon }, { ruta: 'mi-cronograma', titulo: 'Mi cronograma', icon: CalendarIcon }];
-const ADMIN: NavItem[] = [{ ruta: 'tiendas', titulo: 'Gestión de tiendas', icon: UsersIcon }, { ruta: 'auditoria', titulo: 'Auditoría', icon: FileTextIcon }];
+const ADMIN: NavItem[] = [{ ruta: 'tiendas', titulo: 'Gestión de tiendas', icon: UsersIcon }, { ruta: 'topes', titulo: 'Topes de tasas', icon: SlidersIcon }, { ruta: 'auditoria', titulo: 'Auditoría', icon: FileTextIcon }];
 function Marco({ ruta, children, cliente = false }: { ruta: string; children: ReactNode; cliente?: boolean }) {
     const { sesion, salir } = useSesion();
     const { tienda, clientes, errorBase } = useStore();

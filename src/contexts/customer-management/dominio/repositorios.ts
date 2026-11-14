@@ -1,4 +1,4 @@
-import type { Cliente } from './modelos';
+import type { Cliente, TopeTasa } from './modelos';
 
 export interface RepositorioClientes {
     porId(id: number): Cliente | undefined;
@@ -21,4 +21,10 @@ export interface AccesoDeClientes {
 /** Lo que clientes pregunta a originación para decidir si puede cambiar la moneda. */
 export interface HistorialDeCompras {
     huboComprasEnElMes(clienteId: number, mes: string): boolean;
+}
+
+export interface RepositorioTopes {
+    todos(): TopeTasa[];
+    /** Reemplaza el tope que tiene el mismo id. */
+    guardar(tope: TopeTasa): void;
 }

@@ -13,6 +13,8 @@ import { registrarCompra, type DependenciasRegistrarVenta } from '../contexts/cr
 import type { VentaCreditoRegistrada } from '../contexts/credit-origination/dominio/eventos';
 import type { Venta } from '../contexts/credit-origination/dominio/modelos';
 import type { CatalogoDeVenta, Compradores } from '../contexts/credit-origination/dominio/repositorios';
+import { guardarTopes } from '../contexts/customer-management/aplicacion/guardarTopes';
+import type { TopeTasa } from '../contexts/customer-management/dominio/modelos';
 import { guardarCliente, type DependenciasGuardarCliente } from '../contexts/customer-management/aplicacion/guardarCliente';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
 import type { AccesoDeClientes, HistorialDeCompras } from '../contexts/customer-management/dominio/repositorios';
@@ -66,13 +68,14 @@ export function crearCasosDeUso(r: Repositorios, creador: CreadorDeCuentas) {
         huboComprasEnElMes: (clienteId, mes) => r.ventas.todas().some((v: Venta) => v.clienteId === clienteId && v.fecha.slice(0, 7) === mes),
     };
 
-    const paraClientes: DependenciasGuardarCliente = { clientes: r.clientes, acceso, historial };
+    const paraClientes: DependenciasGuardarCliente = { clientes: r.clientes, acceso, historial, topes: r.topes };
     const paraVentas: DependenciasRegistrarVenta = { ventas: r.ventas, compradores, catalogo };
     const paraCobranza: DependenciasCobranza = { clientes: clientesDeCobranza, obligaciones: r.obligaciones, pagos: r.pagos, ventas: ventasDeCobranza };
     const paraCortes: DependenciasCortes = { clientes: clientesDeCobranza, obligaciones: r.obligaciones, listados: r.listados, ventas: ventasDeCobranza, auditoria: r.auditoria };
 
     return {
         guardarTienda: (registro: Tienda, clave?: string) => guardarTienda({ tiendas: r.tiendas, cuentas: r.cuentas }, registro, clave, creador),
+        guardarTopes: (registro: TopeTasa) => guardarTopes(r.topes, registro),
         guardarCliente: (sesion: Sesion, registro: Cliente, clave?: string) => guardarCliente(paraClientes, sesion, registro, clave),
         guardarProducto: (sesion: Sesion, registro: Producto) => guardarProducto(r.productos, sesion, registro),
         registrarCompra: (tiendaId: number, entrada: Omit<Venta, 'id'>) => registrarCompra(paraVentas, tiendaId, entrada, bus.publicar),

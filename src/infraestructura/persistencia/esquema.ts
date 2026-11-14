@@ -31,7 +31,7 @@ export interface Dependencia {
 export interface Tabla {
     nombre: string;
     /** Propiedad de Datos que contiene la lista (entidades principales). */
-    lista?: 'tiendas' | 'cuentas' | 'clientes' | 'productos' | 'ventas' | 'obligaciones' | 'listados' | 'pagos' | 'auditoria';
+    lista?: 'tiendas' | 'cuentas' | 'clientes' | 'productos' | 'ventas' | 'obligaciones' | 'topes' | 'listados' | 'pagos' | 'auditoria';
     dependencia?: Dependencia;
     columnas: Columna[];
     clave: string;
@@ -49,6 +49,8 @@ const condiciones: Columna[] = [['moneda', 'T'], ['diaCorte', 'I'], ['diaPago', 
 export const TABLAS: Tabla[] = [
     { nombre: 'tiendas', lista: 'tiendas', clave: 'id', restricciones: ['UNIQUE (ruc)'],
         columnas: [['id', 'I'], ['ruc', 'T'], ['razon', 'T'], ['nombre', 'T'], ['giro', 'T'], ['direccion', 'T'], ['telefono', 'T'], ['correo', 'T'], ['activa', 'B']] },
+    { nombre: 'topes', lista: 'topes', clave: 'id', restricciones: [valores('moneda', 'PEN', 'USD'), 'UNIQUE (moneda)'],
+        columnas: [['id', 'I'], ['moneda', 'T'], ['compensatorioMax', 'T'], ['moratorioMax', 'T'], ['vigenteDesde', 'T']] },
     { nombre: 'clientes', lista: 'clientes', clave: 'id', restricciones: [fk('tienda_id', 'tiendas', 'id'), valores('tipo_doc', 'DNI', 'RUC'), valores('moneda', 'PEN', 'USD'), valores('tipo_c', 'Nominal', 'Efectiva'), valores('cap_c', 'Diaria', 'Mensual'), valores('tipo_m', 'Nominal', 'Efectiva'), valores('cap_m', 'Diaria', 'Mensual')],
         columnas: [['id', 'I'], ['tiendaId', 'I'], ['tipoDoc', 'T'], ['doc', 'T'], ['nombre', 'T'], ['direccion', 'T'], ['telefono', 'T'], ['correo', 'T'], ['activo', 'B'],
             ['limite', 'T'], ['deuda', 'T'], ['saldoComprometido', 'T'], ['moneda', 'T'], ['plazo', 'I'], ['diaCorte', 'I'], ['diaPago', 'I'], ['horaCorte', 'T'],

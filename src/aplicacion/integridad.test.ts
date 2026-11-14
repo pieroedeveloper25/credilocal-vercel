@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ejecutarOperacion } from './ejecutarOperacion';
 import { casosSobre } from '../infraestructura/persistencia/casosSobreDatos';
 import type { Cliente } from '../contexts/customer-management/dominio/modelos';
 import type { Sesion } from '../contexts/identity-and-access/dominio/modelos';
@@ -63,5 +64,24 @@ describe('otros datos de entrada', () => {
     expect(v.id).toBe(2026001);
     const w = registrarCompra(d, 1, { clienteId: 7, fecha: '2026-09-11', hora: '12:00', capital: '1200', modalidad: 'Fin de mes', n: 1, detalle: '', items: [{ sku: 'KIT-001', cantidad: '1' }] });
     expect(w.id).toBe(2026002);
+  });
+});
+
+describe('topes de tasas y permisos', () => {
+  const tope = { id: 1, moneda: 'PEN' as const, compensatorioMax: '100.00', moratorioMax: '15.00', vigenteDesde: '2026-11-01' };
+  it('solo el administrador del sistema cambia los topes', async () => {
+    const d = datos();
+    d.topes = [{ ...tope, compensatorioMax: '114.13', moratorioMax: '17.12' }];
+    const casos = casosSobre(d, cuentas);
+    await expect(ejecutarOperacion(casos, sesion, { accion: 'GUARDAR TOPES', pedido: { registro: tope } })).rejects.toThrow('administrador del sistema');
+    expect(d.topes[0].compensatorioMax).toBe('114.13');
+    const admin: Sesion = { rol: 'Superadministrador', correo: 'root@demo.pe', tiendaId: 0, clienteId: -1 };
+    await ejecutarOperacion(casos, admin, { accion: 'GUARDAR TOPES', pedido: { registro: tope } });
+    expect(d.topes[0].compensatorioMax).toBe('100.00');
+  });
+  it('un cliente con tasa sobre el tope vigente no se guarda', async () => {
+    const d = datos();
+    d.topes = [{ ...tope, compensatorioMax: '20.00' }];
+    await expect(guardarCliente(d, sesion, { ...d.clientes[0], tipoC: 'Efectiva', valC: '25' }, undefined, cuentas)).rejects.toThrow('supera el tope');
   });
 });

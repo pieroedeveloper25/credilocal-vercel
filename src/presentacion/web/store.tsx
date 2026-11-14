@@ -4,7 +4,7 @@ import { api } from './api';
 import type { ListadoCorte, Obligacion, Pago } from '../../contexts/billing-and-collections/dominio/modelos';
 import { deudaLinea, liquidarObligaciones } from '../../contexts/billing-and-collections/dominio/obligaciones';
 import type { Venta } from '../../contexts/credit-origination/dominio/modelos';
-import type { Cliente } from '../../contexts/customer-management/dominio/modelos';
+import type { Cliente, TopeTasa } from '../../contexts/customer-management/dominio/modelos';
 import type { Rol, Sesion, Tienda } from '../../contexts/identity-and-access/dominio/modelos';
 import type { Producto } from '../../contexts/product-catalog/dominio/modelos';
 import type { Datos } from '../../shared/dominio/datos';
@@ -17,6 +17,8 @@ interface Store {
     tienda?: Tienda;
     autenticar: (rol: Rol, correo: string, clave: string) => Promise<Sesion>;
     guardarTienda: (t: Tienda, clave?: string) => Promise<void>;
+    topes: TopeTasa[];
+    guardarTope: (t: TopeTasa) => Promise<void>;
     clientes: Cliente[];
     guardarCliente: (c: Cliente, clave?: string) => Promise<Cliente>;
     productos: Producto[];
@@ -115,6 +117,8 @@ export function StoreProvider({ children }: {
             return respuesta.sesion;
         },
         guardarTienda: async (registro, clave) => { await ejecutar('GUARDAR TIENDA', { registro, clave }); },
+        topes: datos.topes ?? [],
+        guardarTope: async registro => { await ejecutar('GUARDAR TOPES', { registro }); },
         guardarCliente: (registro, clave) => ejecutar<Cliente>('GUARDAR CLIENTE', { registro, clave }, d => {
             const guardado = d.clientes.find(c => registro.id >= 0 ? c.id === registro.id : c.tipoDoc === registro.tipoDoc && c.doc === registro.doc && c.tiendaId === sesion?.tiendaId);
             if (!guardado) throw new Error('El servidor guardó el cliente, pero no devolvió su ficha. Recargue la lista antes de continuar.');

@@ -1,7 +1,8 @@
-import type { Cliente } from './modelos';
+import type { Cliente, TopeTasa } from './modelos';
+import { validarTopes } from './topes';
 import { D } from '../../../shared/dominio/decimal';
 import { correoValido, decimalEntrada, exigir, horaValida, telefono, texto } from '../../../shared/dominio/validaciones';
-export function validarCliente(c: Cliente, otros: Cliente[]) {
+export function validarCliente(c: Cliente, otros: Cliente[], topes: TopeTasa[] = []) {
     texto(c.nombre, 1, 120, 'Nombre del cliente');
     texto(c.direccion, 0, 200, 'Dirección');
     texto(c.correo, 0, 100, 'Correo');
@@ -22,4 +23,5 @@ export function validarCliente(c: Cliente, otros: Cliente[]) {
     for (const s of [c.limite, c.valC, c.valM])
         exigir(/^\d+(\.\d+)?$/.test(s), 'Ingrese importes y tasas numéricos no negativos.');
     exigir(D(c.valC).lte(100) && D(c.valM).lte(100), 'Las tasas del formulario deben estar entre 0 y 100 %.');
+    validarTopes(c, topes);
 }

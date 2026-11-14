@@ -37,6 +37,10 @@ export function repositoriosSobre(datos: Datos): Repositorios {
             siguienteId: () => siguienteId(datos.clientes),
             guardar: cliente => guardarEn(datos.clientes, cliente, c => c.id === cliente.id),
         },
+        topes: {
+            todos: () => (datos.topes ??= []),
+            guardar: tope => guardarEn(datos.topes ??= [], tope, t => t.id === tope.id),
+        },
         productos: {
             buscar: (tiendaId, sku) => datos.productos.find(p => p.tiendaId === tiendaId && p.sku === sku),
             guardar: producto => guardarEn(datos.productos, producto, p => p.tiendaId === producto.tiendaId && p.sku === producto.sku),

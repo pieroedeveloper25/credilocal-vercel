@@ -29,3 +29,12 @@ export interface Cliente {
 export type TipoTasa = 'Nominal' | 'Efectiva';
 
 export type Capitalizacion = 'Diaria' | 'Mensual';
+
+/** Tope de tasas en una moneda, en porcentaje efectivo anual. Rige desde `vigenteDesde` (AAAA-MM-DD). */
+export interface TopeTasa {
+    id: number;
+    moneda: 'PEN' | 'USD';
+    compensatorioMax: string;
+    moratorioMax: string;
+    vigenteDesde: string;
+}

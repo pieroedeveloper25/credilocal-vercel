@@ -58,6 +58,17 @@ describe('persistencia PostgreSQL (PGlite)', () => {
         await b2.cerrar();
     });
 
+    it('crea los topes de tasas una sola vez y conserva los que el administrador cambió', async () => {
+        const ruta = carpeta();
+        const b1 = await abrirPrueba(ruta);
+        expect(await b1.ejecutar(({ datos }) => datos.topes?.map(t => t.moneda))).toEqual(['PEN', 'USD']);
+        await b1.ejecutar(({ datos }) => { datos.topes![0] = { ...datos.topes![0], compensatorioMax: '90.00' }; });
+        await b1.cerrar();
+        const b2 = await abrirBaseDatos(await poolPglite(ruta), async () => { throw new Error('no debía sembrar'); });
+        expect(await b2.ejecutar(({ datos }) => datos.topes?.[0].compensatorioMax)).toBe('90.00');
+        await b2.cerrar();
+    });
+
     it('sin CREDILOCAL_CLAVE_INICIAL la siembra falla', async () => {
         await expect(semillaLimpia(undefined)).rejects.toThrow('CREDILOCAL_CLAVE_INICIAL');
     });
