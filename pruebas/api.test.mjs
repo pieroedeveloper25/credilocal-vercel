@@ -290,7 +290,7 @@ test('regresión retos: mora, parciales, compra tras corte, límite y horario', 
   const base = inicio.datos.datos.clientes[0];
   const registro = {...cliente(base, '74215698', 'Cliente de retos UX'),
     limite: '3000', diaCorte: 10, diaPago: 25, plazo: 6,
-    tipoC: 'Efectiva', valC: '36', tipoM: 'Efectiva', valM: '48'};
+    tipoC: 'Efectiva', valC: '36', tipoM: 'Efectiva', valM: '17'};
   const creado = await op(api, 'GUARDAR CLIENTE', {registro});
   assert.equal(creado.codigo, 200);
   const c = creado.datos.datos.clientes.find(x => x.doc === registro.doc);
@@ -310,9 +310,9 @@ test('regresión retos: mora, parciales, compra tras corte, límite y horario', 
    assert.equal(parcial.codigo, 400);
   }
   const pago = await op(api, 'REGISTRAR PAGO',
-    {clienteId: c.id, periodo: '2026-10', fecha: '2026-10-30', hora: '12:00', abono: '510.08'});
+    {clienteId: c.id, periodo: '2026-10', fecha: '2026-10-30', hora: '12:00', abono: '508.42'});
   assert.equal(pago.codigo, 200);
-  assert.deepEqual([pago.datos.resultado.comp, pago.datos.resultado.mora], ['7.31', '2.77']);
+  assert.deepEqual([pago.datos.resultado.comp, pago.datos.resultado.mora], ['7.31', '1.11']);
 
   await op(api, 'GUARDAR PRODUCTO', {registro: {...producto, contado: '250', credito: '300'}});
   precioActual = 300;

@@ -50,4 +50,11 @@ describe('agregado Cliente', () => {
     const c = ClienteAgregado.reconstituir(base());
     expect(() => c.modificar(base(), { otrosDeLaTienda: [], huboComprasEnElMes: () => { throw new Error('no debía consultarse'); } })).not.toThrow();
   });
+  it('los topes se exigen al cambiar tasas, no al editar otros datos de un cliente anterior', () => {
+    const topes = [{ id: 1, moneda: 'PEN' as const, compensatorioMax: '20.00', moratorioMax: '10.00', vigenteDesde: '2026-11-01' }];
+    const anterior = ClienteAgregado.reconstituir({ ...base(), saldoComprometido: '0.00' });
+    expect(anterior.modificar({ ...base(), nombre: 'Otro nombre' }, { ...sinCompras, topes }).datos.nombre).toBe('Otro nombre');
+    expect(() => anterior.modificar({ ...base(), valC: '25' }, { ...sinCompras, topes })).toThrow('supera el tope');
+    expect(() => ClienteAgregado.registrar(9, 1, { ...base(), doc: '20999999991' }, [], topes)).toThrow('supera el tope');
+  });
 });

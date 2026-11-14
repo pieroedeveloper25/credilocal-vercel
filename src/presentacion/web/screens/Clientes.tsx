@@ -74,7 +74,9 @@ export function Clientes() {
     };
     const guardar = async () => { setOcupado(true); setMensaje(''); try {
         setTocados(['nombre', 'doc', 'correo', 'telefono']);
-        validarCliente(f, clientes, topes);
+        const previo = clientes.find(c => c.id === f.id);
+        const cambiaTasas = !previo || (['moneda', 'tipoC', 'valC', 'capC', 'tipoM', 'valM', 'capM'] as const).some(k => previo[k] !== f[k]);
+        validarCliente(f, clientes, cambiaTasas ? topes : []);
         const actualizado = await guardarCliente(f, clave);
         setGuardado(actualizado);
         setMensaje('Cliente guardado.');
