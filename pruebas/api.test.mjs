@@ -179,6 +179,13 @@ test('las cuentas con hash anterior se renuevan al ingresar y siguen funcionando
  app=await entorno(ruta);
  try{assert.equal((await entrar(app.sesion())).codigo,200);}finally{await app.cerrar();}
 });
+test('los ingresos exitosos y fallidos quedan en la auditoría, sin contraseñas',async()=>{
+ const app=await entorno();try{const api=app.sesion();assert.equal((await entrar(api,'Comercio','comercio@sutaller.pe','claveequivocada')).codigo,400);assert.equal((await entrar(api)).codigo,200);
+ const admin=app.sesion();await entrar(admin,'Superadministrador','sistema@credilocal.pe');const h=(await admin('auditoria')).datos;
+ const fallido=h.find(r=>r.accion==='ACCESO FALLIDO'),exito=h.find(r=>r.accion==='INICIAR SESIÓN'&&r.actor==='comercio@sutaller.pe');
+ assert.ok(fallido&&fallido.actor==='comercio@sutaller.pe'&&fallido.detalle==='perfil=Comercio');assert.ok(exito&&exito.detalle==='perfil=Comercio');assert.ok(!JSON.stringify(h).includes('claveequivocada'));
+ }finally{await app.cerrar();}
+});
 test('tras diez intentos fallidos la cuenta se bloquea y no revela si el correo existe',async()=>{
  const app=await entorno();
  try{

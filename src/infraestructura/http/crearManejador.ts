@@ -98,10 +98,17 @@ export function crearManejador(o: OpcionesManejador) {
                 if (url.pathname === '/api/login' && req.method === 'POST') {
                     try {
                         const { sesion: s } = await sesiones.entrar(req, res, acceso, pedido);
+                        repos.auditoria.registrar({ fecha: new Date().toISOString(), actor: s.correo, accion: 'INICIAR SESIÓN', tiendaId: s.tiendaId, detalle: `perfil=${s.rol}` });
                         return respuesta(200, { sesion: s, datos: datosVisibles(d, s) });
                     }
                     catch (e) {
                         if (!(e instanceof ErrorDeDominio)) throw e;
+                        // El intento fallido también queda registrado, sin la contraseña y con el texto recibido acotado.
+                        // No se registran los bloqueos ni los pedidos mal formados, para que insistir no llene la auditoría.
+                        if (!(e instanceof ErrorDeAccesoLimitado) && typeof pedido.correo === 'string' && typeof pedido.clave === 'string' && pedido.correo.length <= 100 && pedido.clave.length <= 64) {
+                            const perfil = ['Superadministrador', 'Comercio', 'Cliente'].includes(String(pedido.rol)) ? String(pedido.rol) : 'desconocido';
+                            repos.auditoria.registrar({ fecha: new Date().toISOString(), actor: pedido.correo.replace(/[\u0000-\u001f]/g, ''), accion: 'ACCESO FALLIDO', detalle: `perfil=${perfil}` });
+                        }
                         diferido = e;
                         return respuesta(0, null);
                     }
