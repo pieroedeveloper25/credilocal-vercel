@@ -5,8 +5,8 @@ import { decimalEntrada, exigir } from '../../../shared/dominio/validaciones';
 
 /** Topes que la base inicial guarda hasta que el administrador los actualice. */
 export const TOPES_INICIALES: TopeTasa[] = [
-    { id: 1, moneda: 'PEN', compensatorioMax: '114.13', moratorioMax: '17.12', vigenteDesde: '2026-08-01' },
-    { id: 2, moneda: 'USD', compensatorioMax: '99.84', moratorioMax: '14.98', vigenteDesde: '2026-08-01' },
+    { id: 1, moneda: 'PEN', compensatorioMax: '114.68', moratorioMax: '17.20', vigenteDesde: '2026-11-01' },
+    { id: 2, moneda: 'USD', compensatorioMax: '103.14', moratorioMax: '15.47', vigenteDesde: '2026-11-01' },
 ];
 
 /** Tasa efectiva anual (fracción) equivalente a la tasa pactada; las nominales se capitalizan antes de compararlas con el tope. */

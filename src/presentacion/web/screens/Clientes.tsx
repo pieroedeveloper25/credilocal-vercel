@@ -12,7 +12,7 @@ import { D } from '../../../shared/dominio/decimal';
 import { validarCliente } from '../../../contexts/customer-management/dominio/validaciones';
 import { correoValido, telefono } from '../../../shared/dominio/validaciones';
 import { api } from '../api';
-const nuevo = (): Cliente => ({ id: -1, nombre: '', tipoDoc: 'DNI', doc: '', direccion: '', telefono: '', correo: '', activo: true, horaCorte: '23:59', limite: '5000', deuda: '0', diaCorte: 20, diaPago: 26, plazo: 6, moneda: 'PEN', tipoC: 'Nominal', valC: '24', capC: 'Diaria', tipoM: 'Nominal', valM: '36', capM: 'Diaria' });
+const nuevo = (): Cliente => ({ id: -1, nombre: '', tipoDoc: 'DNI', doc: '', direccion: '', telefono: '', correo: '', activo: true, horaCorte: '23:59', limite: '5000', deuda: '0', diaCorte: 20, diaPago: 26, plazo: 6, moneda: 'PEN', tipoC: 'Nominal', valC: '24', capC: 'Diaria', tipoM: 'Nominal', valM: '15', capM: 'Diaria' });
 export function Clientes() {
     const { clientes, guardarCliente, deudaDe, topes } = useStore();
     const [f, setF] = useState<Cliente>(() => clientes[0] ?? nuevo());

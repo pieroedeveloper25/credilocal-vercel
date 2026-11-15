@@ -19,7 +19,7 @@ describe('topes de tasas', () => {
     expect(() => validarCliente({ ...cliente, tipoM: 'Efectiva', valM: '18' }, [], TOPES_INICIALES)).toThrow('moratoria');
   });
   it('compara con el tope de la moneda del cliente', () => {
-    const usd = { ...cliente, moneda: 'USD' as const, tipoC: 'Efectiva' as const, valC: '100' };
+    const usd = { ...cliente, moneda: 'USD' as const, tipoC: 'Nominal' as const, capC: 'Mensual' as const, valC: '75' };
     expect(() => validarCliente(usd, [], TOPES_INICIALES)).toThrow('USD');
     expect(() => validarCliente({ ...usd, moneda: 'PEN' }, [], TOPES_INICIALES)).not.toThrow();
   });
