@@ -1,195 +1,124 @@
 # CrediLocal
 
-Sistema académico de crédito comercial para varias tiendas. Incluye clientes, productos con imagen, ventas a fin de mes o en cuotas, cronogramas franceses, intereses, mora, cortes y cobranza completa de la deuda exigible.
+Sistema web de crédito comercial para negocios de barrio, desarrollado para el trabajo final de SI642 Finanzas e Ingeniería Económica (UPC, 2026-20). Permite registrar tiendas, clientes con sus condiciones de crédito, un catálogo de productos y servicios, ventas a crédito a fin de mes o en cuotas por el método francés con gracia total, listados de pago al corte y cobranzas con mora y prelación.
 
-Tecnologías: **React 18, TypeScript, Vite 6, Node.js y SQLite**. Los cálculos usan `decimal.js` con 40 dígitos significativos. El código se organiza en cinco contextos de negocio inspirados en DDD dentro de un único servicio.
+Aplicativo publicado: **https://credilocal-vercel.vercel.app**
 
-## Instalar y ejecutar
+## Tecnologías
 
-Requisitos: **Node.js 22.13 o superior** (se probó con la 22; incluye el módulo `node:sqlite`, que Node marca como experimental y avisa por consola), npm y acceso al registro npm para instalar dependencias. También se puede descargar con **Code → Download ZIP** y extraerlo, en vez de clonar.
+| Parte | Tecnología |
+| --- | --- |
+| Interfaz | React 18, TypeScript y Vite 6 |
+| API | Funciones de Vercel en Node.js, región São Paulo (`gru1`) |
+| Base de datos | PostgreSQL en Neon, región São Paulo, 17 tablas |
+| Base de datos en local | PGlite, que es PostgreSQL embebido en Node.js |
+| Cálculos | `decimal.js` con 40 dígitos significativos y redondeo `ROUND_HALF_UP` |
+| Pruebas | Vitest y `node:test`, ejecutadas en GitHub Actions |
+
+El motor es PostgreSQL en todos los casos. En el aplicativo publicado los datos están en Neon y al ejecutarlo en una computadora propia quedan en la carpeta `datos/pglite`. La API es la misma: `vercel/manejador.ts` la conecta a Neon y `servidor/main.ts` la conecta a PGlite.
+
+## Cuentas de demostración
+
+El aplicativo publicado tiene una tienda, dos clientes y un catálogo de demostración, todos ficticios. La contraseña de las tres cuentas es `credi2026`, y en la pantalla de acceso el botón **Usar cuenta de demostración** completa la cuenta del perfil elegido.
+
+| Perfil | Correo | Qué puede hacer |
+| --- | --- | --- |
+| Superadministrador | sistema@credilocal.pe | Gestionar tiendas, topes de tasas y auditoría |
+| Comercio | comercio@sutaller.pe | Clientes, catálogo, ventas, estado de cuenta, pagos y simulador |
+| Cliente | contacto@transintegrales.pe | Consultar su estado de cuenta y su cronograma |
+
+## Ejecutar en una computadora propia
+
+Requisitos: Node.js 22.13 o superior y npm. La primera instalación necesita internet para descargar las dependencias.
 
 ```bash
-git clone https://github.com/pieroedeveloper25/credilocal.git
-cd credilocal
+git clone https://github.com/pieroedeveloper25/credilocal-vercel.git
+cd credilocal-vercel
 npm ci
 npm run build
+```
+
+El primer arranque crea la base local vacía con una sola cuenta, el superadministrador `sistema@credilocal.pe`. Su contraseña inicial se indica con la variable `CREDILOCAL_CLAVE_INICIAL` (8 a 64 caracteres, con letras y números) y el sistema pide cambiarla en el primer ingreso. Los arranques siguientes ya no necesitan la variable.
+
+En Windows (PowerShell):
+
+```powershell
+$env:CREDILOCAL_CLAVE_INICIAL = "Elegir2026"
 npm start
 ```
 
-Abrir **http://127.0.0.1:3000**. Mantener la terminal abierta y detener con Ctrl+C. En Windows se puede usar `INICIAR_CrediLocal.cmd` después de compilar.
+En Linux o macOS:
 
-Este repositorio contiene fuentes: `dist`, `servidor-dist` y `node_modules` se generan localmente. Después de modificar código hay que reconstruir y reiniciar. En el primer inicio se crea `datos/credilocal.sqlite` con datos ficticios; los siguientes conservan las operaciones. La base de uso no está publicada.
+```bash
+CREDILOCAL_CLAVE_INICIAL="Elegir2026" npm start
+```
 
-## Accesos de demostración
+En Windows también se puede usar `INICIAR_CrediLocal.cmd` después de compilar, que pide la contraseña inicial si es el primer arranque.
 
-Contraseña de todos: **`credi2026`**. Seleccionar el perfil correspondiente.
+Luego abrir http://127.0.0.1:3000 y mantener la terminal abierta. Se detiene con Ctrl+C. La base local empieza sin datos de demostración, que están en el aplicativo publicado. Para usar otra carpeta de datos se define `CREDILOCAL_DB` con su ruta.
 
-| Perfil | Correo | Acceso |
-|---|---|---|
-| Superadministrador | sistema@credilocal.pe | Administrar tiendas |
-| Comercio | comercio@sutaller.pe | Clientes, catálogo, ventas, cobros y consultas de su tienda |
-| Cliente | contacto@transintegrales.pe | Consultar su estado y cronograma |
-| Cliente | autopartes@demo.pe | Consultar su estado y cronograma |
+## Pruebas
 
-Son cuentas ficticias. Recargar la página conserva la sesión (el navegador consulta al servidor si la cookie sigue vigente) y las operaciones permanecen guardadas. Las sesiones se guardan en SQLite (solo el resumen SHA-256 del token), de modo que reiniciar el servidor no las invalida. Cerrar sesión las elimina y vencen a las ocho horas.
+```bash
+npm test                    # 106 pruebas unitarias
+npm run test:api            # 23 pruebas de la API sobre una base PGlite temporal
+npm run test:arquitectura   # 5 pruebas de límites entre contextos
+```
 
-Las contraseñas de demostración se pueden cambiar desde el botón **Cambiar contraseña** del panel: pide la contraseña actual, exige 8 a 64 caracteres con letras y números y cierra las demás sesiones de la cuenta. Quien use el sistema fuera de la demostración debe cambiarlas antes de exponerlo a otras personas.
+GitHub Actions ejecuta la compilación y las 134 pruebas en cada cambio de la rama `main` (`.github/workflows/pruebas.yml`).
 
-### Medidas de seguridad
+## Despliegue
 
-- Contraseñas con sal y PBKDF2-SHA256 de 600 000 iteraciones, comparadas en tiempo constante. Las cuentas con el hash anterior (100 000 iteraciones) se renuevan solas al ingresar. Una cuenta inexistente tarda lo mismo que una real, para no revelar qué correos existen.
-- Diez intentos fallidos por cuenta y origen, o cuarenta por origen, bloquean el acceso diez minutos.
-- Cookie de sesión `HttpOnly` y `SameSite=Strict`; lleva `Secure` cuando la conexión llega por HTTPS (también detrás de un proxy que envíe `X-Forwarded-Proto: https`). Las solicitudes POST exigen mismo origen y `Content-Type: application/json`.
-- Cada operación se valida en el servidor (forma, tipos y tamaños) y solo conserva los campos esperados. Los errores internos responden 500 con un mensaje genérico y se registran en la consola del servidor. Los identificadores de clientes, tiendas y ventas los asigna el servidor: un id inexistente no crea registros, y el SKU de un producto no admite espacios ni caracteres de control (hasta 40 caracteres).
-- La página se sirve con Content-Security-Policy, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` y `Permissions-Policy`. Si la sesión vence mientras se usa la aplicación, la interfaz vuelve al acceso con un aviso.
+El aplicativo se despliega en Vercel desde la rama `main` y usa una base PostgreSQL en Neon. Los pasos, las variables de entorno (`DATABASE_URL`, `CRON_SECRET` y `CREDILOCAL_CLAVE_INICIAL`) y la verificación están en [docs/DESPLIEGUE-VERCEL.md](docs/DESPLIEGUE-VERCEL.md). El cron de `vercel.json` emite los listados de corte todos los días a las 05:00 UTC, medianoche en Lima.
 
 ## Funcionalidades
 
-- Alta, edición y baja de tiendas, clientes y productos, conservando su historia.
-- Condiciones de crédito por cliente: moneda, línea, tasas, plazo, corte y pago.
-- Imagen obligatoria JPG o PNG de hasta 2 MB, carga, vista previa, miniaturas y reemplazo al editar.
-- Ventas con productos del catálogo y comprobación de la línea disponible en el servidor.
-- Crédito a fin de mes y cuotas francesas con el tratamiento de gracia implementado.
-- Liquidación separada de capital, compensatorio y mora; pagos completos, sin parciales ni excedentes.
-- Listados al corte, constancias y portal de cliente con acceso solo a su cuenta.
-- Ayuda de campos, vista móvil y selector de tema claro u oscuro.
+- Alta, edición y baja lógica de tiendas, clientes y productos, conservando su historial.
+- Condiciones de crédito por cliente: moneda, línea, tasas nominales o efectivas, plazo máximo, día y hora de corte y día de pago.
+- Topes de tasas compensatoria y moratoria del BCRP por moneda, validados al pactar las tasas.
+- Catálogo con imagen JPG o PNG de hasta 2 MB, precio al contado y precio a crédito.
+- Ventas a fin de mes o en cuotas con control de la línea disponible en el servidor, simulación previa y TCEA.
+- Liquidación con capital, interés compensatorio y mora por separado, pago completo del período sin parciales y prelación mora, interés y capital (art. 1257 del Código Civil).
+- Listado de pago al corte emitido de forma automática.
+- Portal del cliente con acceso solo a su cuenta.
+- Auditoría de operaciones, ingresos exitosos e intentos de acceso fallidos.
+- Ayuda en cada campo, vista móvil y tema claro u oscuro.
+
+## Reglas financieras
+
+- Tasas anuales convertidas a tasa efectiva diaria (TED) y mensual (TEM) con año de 360 días y mes de 30.
+- Días calendario reales entre fechas para la gracia, el interés y la mora.
+- Una compra hasta la fecha y hora de corte vence en el día de pago de ese mes y una posterior en el del mes siguiente.
+- En cuotas, el interés de la gracia total se capitaliza y la cuota se calcula por el método francés sobre el capital ajustado. La última cuota deja el saldo en cero.
+- La mora se calcula sobre el total exigible (capital más interés compensatorio) por los días de atraso.
+
+## Seguridad
+
+- Contraseñas con sal y PBKDF2-SHA256 de 600 000 iteraciones, comparadas en tiempo constante.
+- Diez intentos fallidos por cuenta y origen, o cuarenta por origen, bloquean el acceso diez minutos.
+- Cookie de sesión `HttpOnly`, `SameSite=Strict` y `Secure` en HTTPS. Las sesiones vencen a las ocho horas.
+- Cada operación se valida en el servidor, que además aplica el perfil y la tienda de la sesión.
+- Cabeceras Content-Security-Policy, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` y `Permissions-Policy`.
 
 ## Organización del código
 
 ```text
+api/                          Funciones de Vercel (API y cron de cortes)
+vercel/manejador.ts           API conectada a Neon
+servidor/main.ts              Servidor local conectado a PGlite
 src/
   contexts/
-    identity-and-access/       # Tiendas, cuentas, perfiles y sesiones
-    customer-management/      # Clientes, condiciones y línea de crédito
-    product-catalog/          # Productos, precios, imágenes y modalidades
-    credit-origination/       # Venta, tasas, gracia y cronograma
-    billing-and-collections/  # Deuda, mora, pagos y cortes
-  shared/
-    dominio/                  # Decimal, fechas, validaciones y tipos compartidos
-    aplicacion/               # Contratos, unidad de trabajo y bus de eventos
-  aplicacion/                 # Composición y autorización de casos de uso
-  infraestructura/            # HTTP, SQLite relacional, demostración y migración
-  presentacion/web/           # Pantallas, componentes y acceso a la API
-  main.tsx                    # Entrada de React
-servidor/main.ts               # Composición y arranque del servicio
-pruebas/                       # Integración HTTP y límites de arquitectura
-scripts/                       # Compilación y migración
+    identity-and-access/      Tiendas, cuentas, perfiles y sesiones
+    customer-management/      Clientes, condiciones y línea de crédito
+    product-catalog/          Productos, precios, imágenes y modalidades
+    credit-origination/       Venta, tasas, gracia, cronograma y TCEA
+    billing-and-collections/  Deuda, mora, pagos y cortes
+  shared/                     Decimal, fechas, validaciones, contratos y eventos
+  aplicacion/                 Casos de uso y autorización
+  infraestructura/            HTTP, persistencia PostgreSQL y PGlite, composición
+  presentacion/web/           Pantallas y componentes de React
+pruebas/                      Pruebas de la API y de arquitectura
+docs/                         Arquitectura y despliegue en Vercel y Neon
 ```
 
-Cada contexto se organiza en `dominio` (entidades con sus reglas, servicios de dominio, eventos y los puertos de sus repositorios), `aplicacion` (casos de uso que orquestan) e `infraestructura`. Los principios aplicados:
-
-- **Agregados con comportamiento:** `ClienteAgregado` protege la línea de crédito y el cambio de moneda; `registrarVenta` fija precios y condiciones y genera las obligaciones; `cobrar` hace cumplir las reglas del pago y la prelación del Art. 1257 C.C. Los casos de uso solo orquestan.
-- **Un repositorio por agregado:** cada contexto declara el puerto de sus repositorios y `infraestructura/persistencia/repositoriosSobreDatos.ts` los implementa. Ningún archivo de un contexto conoce la fotografía `Datos`; la prueba de arquitectura lo exige.
-- **Contratos propios entre contextos:** un contexto solo importa de otro sus eventos de dominio (y el rol y la sesión de identidad). Lo que necesita de los demás lo declara con interfaces mínimas propias (`ClienteComprador`, `ClienteDeCobranza`, `AccesoDeClientes`…) y `aplicacion/casosDeUso.ts` las conecta como capa anticorrupción.
-
-`VentaCreditoRegistrada` crea obligaciones y compromete la línea del cliente. `CapitalAmortizado` actualiza su saldo pendiente después del cobro. El bus es síncrono: sus suscriptores terminan dentro de la unidad de trabajo antes del guardado SQLite.
-
-La persistencia guarda una fotografía `Datos` por unidad de trabajo; los contextos la ven solo a través de sus repositorios. SQLite guarda el modelo relacional del capítulo 8 del informe (13 tablas con claves primarias y foráneas, más `metadatos`) con guardado transaccional e incremental: cada guardado compara con el último estado conocido y solo inserta, actualiza o elimina las filas que cambiaron. Una base de la versión 1.0, que guardaba un documento JSON por fila, se convierte sola al abrirla. Es un monolito modular, no contextos desplegados con bases independientes. Ejecutar una sola instancia del servidor por base.
-
-## Reglas financieras
-
-- Tasas anuales nominales o efectivas convertidas a TED y TEM, con año 360 y mes financiero de 30 días.
-- Días calendario para los intervalos de gracia y mora; la hora del corte determina el ciclo de una compra del mismo día.
-- Importes redondeados a centavos con `ROUND_HALF_UP` en las etapas del algoritmo; la última cuota ajusta el saldo a cero.
-- En cuotas, las compras anteriores o iguales al corte capitalizan gracia hasta el día de pago de ese mes. Las posteriores no incorporan ese tramo. En ambos casos, la primera cuota vence el mes siguiente a la compra.
-- Mora sobre capital y compensatorio exigibles. El pago se distribuye en mora, compensatorio y capital.
-- Las ventas conservan sus condiciones pactadas. La gracia capitalizada no consume línea adicional.
-
-Los datos ficticios incluyen la compra de 1200.00 con pago histórico al 30/09/2026 por 1214.88 y el financiamiento de 4500.00 con capital ajustado 4536.22 y cuota de referencia 1579.41. Otras fechas cambian la liquidación. El cliente del segundo caso también tiene compras previas; su deuda completa no equivale a una sola cuota.
-
-## Pruebas y desarrollo
-
-```bash
-npm test
-npm run test:arquitectura
-npm run build
-npm run test:api
-npm run test:demo
-```
-
-La versión corregida se comprobó con **73 pruebas unitarias, 5 de arquitectura, 17 de API, 4 de demostración y 12 de persistencia**. Las pruebas HTTP usan bases ficticias separadas en `pruebas/base-prueba-*`. También se verificaron la carga PNG, el reemplazo JPG, la edición, la recarga y la vista móvil en navegador.
-
-`build` comprueba con `tsc` los tipos de todo el código, incluidos el servidor y los adaptadores Node, compila React y empaqueta Node con esbuild. Los adaptadores se ejercitan además con pruebas de integración.
-
-Para editar pantallas con recarga automática, mantener el backend en 3000 y ejecutar en otra terminal:
-
-```bash
-npm run dev
-```
-
-Usar la URL que indique Vite; su proxy envía `/api` al puerto 3000. `npm run preview` no sustituye el servidor completo.
-
-## Acceso desde otros equipos
-
-Para compartir operaciones, todos deben conectarse a un mismo servidor. En PowerShell, en el equipo que lo hospeda:
-
-```powershell
-$env:HOST='0.0.0.0'
-$env:PORT='3000'
-npm start
-```
-
-Los demás abren `http://IP_DEL_SERVIDOR:3000`. Comprobar la IP con `ipconfig`, la red y el firewall. `127.0.0.1` apunta al propio equipo. Cada instalación independiente crea su propia base.
-
-Los cortes se revisan cada 30 segundos, al arrancar y después de las operaciones. Funcionan sin navegadores mientras el servicio siga encendido; recupera pendientes al reiniciar.
-
-GitHub publica el código, no despliega la aplicación. Un alojamiento público requiere Node compatible, HTTPS, cookie adecuada y almacenamiento persistente para SQLite. Un alojamiento exclusivo de archivos estáticos no basta.
-
-## Respaldo y migración
-
-Detener el servidor y copiar `datos/credilocal.sqlite` para respaldar. Antes de restaurar, conservar la base actual y reemplazarla con el servicio detenido. `CREDILOCAL_DB` permite elegir otra ruta.
-
-La migración desde IndexedDB es opcional. `scripts/exportar-indexeddb.js` descarga el respaldo desde el navegador y origen anteriores. El destino del importador debe ser un archivo nuevo dentro de un directorio existente:
-
-```powershell
-node scripts/importar-base.mjs respaldo.json datos/importada.sqlite
-$env:CREDILOCAL_DB='datos/importada.sqlite'
-npm start
-```
-
-No se migran bases personales automáticamente. Mantener los respaldos fuera del repositorio.
-
-## Base de demostración poblada
-
-Después de instalar y compilar, generar una base independiente y ejecutarla:
-
-```bash
-npm run demo:crear
-npm run demo:iniciar
-```
-
-Abrir http://127.0.0.1:3000. Se utilizan `datos/demo.sqlite` y los recursos locales de `recursos/demo`. La base normal `datos/credilocal.sqlite` permanece separada. El comando de carga **rechaza sobrescribir un archivo existente** y el inicio de demostración rechaza bases normales.
-
-La fecha y la hora de una compra o de un pago las indica el comercio (por defecto, el momento actual) y pueden ser anteriores al registro, como cuando se anota en el cuaderno una venta del día anterior; nunca pueden ser futuras. La auditoría guarda siempre el momento real del registro y marca como `retroactiva=N d` las operaciones con fecha anterior al día en que se registran. Esto permite reproducir el ejemplo del enunciado (compra del 15 de setiembre).
-
-Para repetir el ensayo en otra base y con una fecha de referencia fija:
-
-```bash
-npm run demo:crear -- --destino datos/ensayo2.sqlite --fecha 2026-10-24
-npm run demo:iniciar -- datos/ensayo2.sqlite
-```
-
-La fecha debe estar entre 2026-10-01 y la fecha actual de Lima; no se cambia el reloj ni se registran operaciones futuras. La base se crea con fechas relativas a esa referencia; posteriormente la aplicación liquida según la fecha consultada. Las contraseñas ficticias son `credi2026`.
-
-La carga contiene dos tiendas, tres clientes por tienda, cuatro productos reales por tienda y nueve cuentas. Conserva los casos históricos de 1214.88 y 1579.41 como operaciones registradas. El catálogo nuevo sirve para nuevas ventas; no cambia esos importes históricos.
-
-| Perfil de demostración | Correo | Recorrido |
-|---|---|---|
-| Comercio del taller | comercio@sutaller.pe | Casos históricos y cuatro productos automotrices |
-| Cliente del caso a fin de mes | cliente.taller@credilocal.test | Compra histórica de 1200.00 |
-| Comercio de la bodega | bodega@credilocal.test | Tres clientes y cuatro productos de abarrotes |
-| Cliente Ana | ana@credilocal.test | Pago completo dentro del plazo, sin mora |
-| Cliente Pedro | pedro@credilocal.test | Compra vencida con mora |
-| Cliente Rosa | rosa@credilocal.test | Línea de 80.00, capital pendiente 72.80 y disponible 7.20 |
-
-También siguen funcionando el superadministrador y los otros dos accesos de cliente del taller indicados arriba. Los datos de tiendas, personas, documentos, precios a crédito y operaciones son ficticios.
-
-Con Rosa, intentar vender dos bolsas de arroz a crédito permite demostrar el rechazo por línea insuficiente. Para un pago, utilizar el total de la liquidación de la fecha elegida: el servidor rechaza parciales y excedentes. Ana tiene un pago por 55.65 registrado el día 26 del mes anterior a la referencia; los cortes y la mora de Pedro se pueden consultar en ese período y el actual.
-
-### Productos precios e imágenes de referencia
-
-El catálogo usa productos reales de Castrol, Prestone, WD-40, Paisana, Primor, Tottus y Don Vittorio. Las referencias de precio regular, posibles promociones, URL y método de consulta del 24/10/2026 están en [catalogo.json](recursos/demo/catalogo.json). Son referencias observadas, algunas de fichas oficiales indexadas; no se promete precio vigente en carrito ni disponibilidad. El precio a crédito es un supuesto propio de la tienda ficticia, no una financiación ofrecida por el vendedor consultado.
-
-Las fotografías de Wikimedia Commons son **referenciales de la categoría o marca**, no necesariamente del envase o presentación exactos. No se copiaron fotografías comerciales sin permiso. Sus autores, fuentes, licencias Creative Commons o declaración de dominio público están en [imagenes.json](recursos/demo/imagenes.json), y las atribuciones se muestran junto a las imágenes del catálogo. Las miniaturas se descargaron de Commons sin cambios locales; cada fotografía conserva su licencia indicada, incluidas las condiciones de compartir igual cuando correspondan.
-
-Los JPG y PNG están en `recursos/demo/productos`. La carga los convierte a Base64 y los guarda con cada producto en SQLite; usar la demo no necesita descargar de nuevo las fotos ni consultar los precios por internet. Si se reemplaza una foto desde el formulario, se elimina la atribución de la foto anterior.
+Cada contexto se divide en `dominio`, `aplicacion` e `infraestructura`, siguiendo DDD y arquitectura limpia. Un contexto solo conoce de otro sus eventos de dominio, y las pruebas de arquitectura verifican esos límites.

@@ -1,4 +1,5 @@
-import { resolve } from 'node:path';
+import { mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import type { ClienteSql, PoolSql } from './postgres';
 
 /**
@@ -8,6 +9,8 @@ import type { ClienteSql, PoolSql } from './postgres';
  */
 export async function poolPglite(ruta: string): Promise<PoolSql> {
     const { PGlite } = await import('@electric-sql/pglite');
+    // PGlite crea su propia carpeta, pero no la carpeta que la contiene (por ejemplo datos/ en una copia recién descargada).
+    if (ruta !== ':memory:') mkdirSync(dirname(resolve(ruta)), { recursive: true });
     const db = new PGlite(ruta === ':memory:' ? undefined : resolve(ruta));
     await db.waitReady;
     let turno: Promise<void> = Promise.resolve();
